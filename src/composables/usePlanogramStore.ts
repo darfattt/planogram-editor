@@ -21,6 +21,9 @@ export default function usePlanogramStore() {
   const getProductsBySection = (sectionId: string) => 
     products.value.filter(p => p.sectionId === sectionId)
 
+  const getProductsByShelf = (shelfId: string) => 
+    products.value.filter(p => p.shelfId === shelfId)
+
   const initializeTestData = () => {
     // Test Section
     const testSection = {
@@ -60,7 +63,9 @@ export default function usePlanogramStore() {
       width: 50,
       height: 50,
       sectionId: testSection.id,
-      shelfId: testShelf.id
+      shelfId: testShelf.id,
+      category: 'product',
+      type: 'productX'
     })
 
     // Standalone Product
@@ -69,8 +74,61 @@ export default function usePlanogramStore() {
       x: 400,
       y: 200,
       width: 50,
-      height: 50
+      height: 50,
+      category: 'product',
+      type: 'productX'
     })
+  }
+
+  const updateShelfPosition = (payload: {
+    id: string
+    x: number
+    y: number
+    products: Array<{
+      id: string
+      relativeX: number
+      relativeY: number
+    }>
+  }) => {
+    const shelf = shelves.value.find(s => s.id === payload.id)
+    if (!shelf) return
+
+    shelf.x = payload.x
+    shelf.y = payload.y
+    
+    payload.products.forEach(p => {
+      const product = products.value.find(prod => prod.id === p.id)
+      if (product) {
+        product.relativeX = p.relativeX ?? 0
+        product.relativeY = p.relativeY ?? 0
+      }
+    })
+  }
+
+  const finalizeShelfPosition = (payload: {
+    id: string
+    x: number
+    y: number
+    products: Product[]
+  }) => {
+    const shelf = shelves.value.find(s => s.id === payload.id)
+    if (!shelf) return
+
+    // Handle section grouping logic here
+    const section = sections.value.find(s => 
+      payload.x >= s.x &&
+      payload.x <= s.x + s.width &&
+      payload.y >= s.y &&
+      payload.y <= s.y + s.height
+    )
+
+    if (section) {
+      shelf.sectionId = section.id
+      shelf.relativeX = payload.x - section.x
+      shelf.relativeY = payload.y - section.y
+    } else {
+      shelf.sectionId = null
+    }
   }
 
   // Add methods for adding/updating items here
@@ -84,6 +142,9 @@ export default function usePlanogramStore() {
     standaloneShelves,
     getShelvesBySection,
     getProductsBySection,
-    initializeTestData
+    getProductsByShelf,
+    initializeTestData,
+    updateShelfPosition,
+    finalizeShelfPosition
   }
 } 

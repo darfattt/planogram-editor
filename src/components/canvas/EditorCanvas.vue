@@ -11,11 +11,7 @@
         <v-group
         v-for="section in sections"
         :key="section.id"
-        :config="{
-          ...sectionConfig(section),
-          category: 'fixtures',
-          subCategory: 'section'
-        }"
+        :config="sectionConfig(section)"
         @dragmove="updateSectionPosition(section.id)"
         @mouseenter="handleSectionHover"
         @mouseleave="handleSectionHoverEnd"
@@ -27,28 +23,12 @@
           v-for="shelf in getShelvesBySection(section.id)"
           :key="shelf.id"
           :shelf="shelf"
+          :products="getProductsByShelf(shelf.id)"
           @update="updateShelfPosition"
-         
-        />
-        
-        <ProductComponent
-          v-for="product in getProductsBySection(section.id)"
-          :key="product.id"
-          :product="product"
-          category="product"
-          type="productX"
-          @update="updateProductPosition"
-        />
+        >
+        </ShelfComponent>
       </v-group>
-
-      <!-- Standalone items -->
-      <ShelfComponent
-        v-for="shelf in standaloneShelves"
-        :key="shelf.id"
-        :shelf="shelf"
-        @update="updateShelfPosition"
-      />
-      
+<!-- 
       <ProductComponent
         v-for="product in standaloneProducts"
         :key="product.id"
@@ -56,7 +36,7 @@
         category="product"
         type="productX"
         @dragend="handleProductDrop"
-      />
+      /> -->
     </v-layer>
   </v-stage>
 </template>
@@ -69,8 +49,7 @@ import ShelfComponent from '../../components/canvas/ShelfComponent.vue'
 import ProductComponent from '../../components/canvas/ProductComponent.vue'
 import { v4 as uuidv4 } from 'uuid'
 import useDebugStore from '../../composables/useDebugStore'
-import DebugOverlay from '../../components/DebugOverlay.vue'
-import type { Section, Shelf } from '../../types'
+import type { Section } from '../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
 
 export default defineComponent({
@@ -78,20 +57,18 @@ export default defineComponent({
     ShelfComponent,
     ProductComponent,
   },
-  emits: ['drop', 'dragover'],
   setup() {
     const {
       sections,
       shelves,
       products,
-      standaloneProducts,
-      standaloneShelves,
       getShelvesBySection,
       getProductsBySection,
+      getProductsByShelf,
       initializeTestData
     } = usePlanogramStore()
 
-    const { stageRef, getAbsolutePosition, findSectionAtPosition } = useDragAndDrop()
+    const { stageRef, findSectionAtPosition } = useDragAndDrop()
     const { debugMode, coordinates } = useDebugStore()
 
     const stageConfig = {
@@ -112,7 +89,7 @@ export default defineComponent({
     // Update mouse move handler
     const handleMouseMove = (e: KonvaEventObject<PointerEvent>) => {
       if (!debugMode.value || !stageRef.value) return
-      
+
       const stage = stageRef.value.getStage()
       if (!stage) return
 
@@ -134,7 +111,9 @@ export default defineComponent({
       id: section.id,
       x: section.x,
       y: section.y,
-      draggable: true
+      draggable: true,
+      category: 'fixtures',
+      subCategory: 'section'
     })
 
     const sectionRectConfig = (section: any) => ({
@@ -251,67 +230,42 @@ export default defineComponent({
       group.y(absoluteY)
     }
 
-    const updateShelfPosition = (shelfId: string) => {
-      const shelf = shelves.value.find((s: Shelf) => s.id === shelfId)
+    const updateShelfPosition = (payload: {
+      id: string
+      x: number
+      y: number
+      products: Array<{
+        id: string
+        relativeX: number
+        relativeY: number
+      }>
+    }) => {
+      const shelf = shelves.value.find(s => s.id === payload.id)
       if (!shelf || !stageRef.value) return
       
-      const group = stageRef.value.getStage().findOne(`#${shelfId}`)
+      const group = stageRef.value.getStage().findOne(`#${payload.id}`)
       if (!group) return
-
-      // Get absolute position from group
-      const absPos = group.getAbsolutePosition()
-      //console.log('Current absolute position:', absPos.x, absPos.y)
-      
-      // Calculate relative position if in section
+      // Update shelf position
       if (shelf.sectionId) {
-        const section = sections.value.find(sec => sec.id === shelf.sectionId)
+        const section = sections.value.find(s => s.id === shelf.sectionId)
         if (section) {
-          shelf.relativeX = absPos.x - section.x
-          shelf.relativeY = absPos.y - section.y
-          //console.log('Relative to section:', shelf.relativeX, shelf.relativeY)
+          shelf.relativeX = payload.x - section.x
+          shelf.relativeY = payload.y - section.y
         }
+      } else {
+        shelf.x = payload.x
+        shelf.y = payload.y
       }
 
-      // Update both absolute and bottom-left coordinates
-      shelf.x = absPos.x
-      shelf.y = absPos.y + shelf.height
-      //console.log('Updated shelf coordinates:', shelf.x, shelf.y)
-    }
-
-    const finalizeShelfPosition = (shelfId: string) => {
-      console.log('finalizeShelfPosition', shelfId)
-      const shelf = shelves.value.find(s => s.id === shelfId)
-      if (!shelf || !stageRef.value) return
-
-      const group = stageRef.value.getStage().findOne(`#${shelfId}`)
-      if (!group) return
-
-      const absPos = group.getAbsolutePosition()
-      console.log('Final absolute position:', absPos.x, absPos.y)
-
-      const newSection = findSectionAtPosition(absPos, sections.value)
-      if (!newSection) {
-        console.log('No section found - resetting position')
-        if (shelf.sectionId) {
-          group.x(shelf.relativeX!)
-          group.y(shelf.relativeY!)
-        }
-        shelf.sectionId = null
-        return
-      }
-
-      // Calculate relative position with proper offset
-      shelf.sectionId = newSection.id
-      shelf.relativeX = absPos.x - newSection.x
-      shelf.relativeY = absPos.y - newSection.y
-      shelf.x = absPos.x
-      shelf.y = absPos.y + shelf.height
-      
-      console.log('Finalized positions:', {
-        relative: [shelf.relativeX, shelf.relativeY],
-        absolute: [shelf.x, shelf.y],
-        section: [newSection.x, newSection.y]
-      })
+      // // Products move automatically with the group due to Konva's grouping
+      // // Just update their relative positions in the store
+      // payload.products.forEach(p => {
+      //   const product = products.value.find(prod => prod.id === p.id)
+      //   if (product) {
+      //     product.relativeX = p.relativeX
+      //     product.relativeY = p.relativeY
+      //   }
+      // })
     }
 
     const handleDragOver = (e: KonvaEventObject<DragEvent>) => {
@@ -345,18 +299,6 @@ export default defineComponent({
       }
     }
 
-    const handleProductDrop = ({ id, x, y }: { id: string; x: number; y: number }) => {
-      console.log('handleProductDrop', id, x, y)
-      const product = products.value.find(p => p.id === id)
-      if (!product) return
-
-      // Update product position directly
-      product.x = x
-      product.y = y
-      // Add your shelf snapping logic here
-      updateProductPosition(id)
-    }
-
     const handleSectionHover = (e: KonvaEventObject<MouseEvent>) => {
       if (stageRef.value?.getStage()) {
         stageRef.value.getStage().container().style.cursor = 'grab'
@@ -368,16 +310,23 @@ export default defineComponent({
         stageRef.value.getStage().container().style.cursor = 'default'
       }
     }
-
-    const handleShelfDragEnd = (payload: {
-      id: string
-      x: number
-      y: number
-      relativeX: number
-      relativeY: number
+    // Handle product detachment
+    const handleProductDetach = ({ productId, absoluteX, absoluteY }: { 
+      productId: string;
+      absoluteX: number;
+      absoluteY: number;
     }) => {
-      console.log('Received shelf dragend:', payload.id)
-      finalizeShelfPosition(payload.id)
+      convertToStandaloneProduct(productId, absoluteX, absoluteY)
+    }
+
+    // Handle product re-parenting
+    const convertToStandaloneProduct = (productId: string, x: number, y: number) => {
+      const product = products.value.find(p => p.id === productId)
+      if (product) {
+        product.shelfId = undefined
+        product.x = x
+        product.y = y
+      }
     }
 
     return {
@@ -386,23 +335,20 @@ export default defineComponent({
       sections,
       shelves,
       products,
-      standaloneProducts,
-      standaloneShelves,
       getShelvesBySection,
       getProductsBySection,
+      getProductsByShelf,
       sectionConfig,
       sectionRectConfig,
       updateSectionPosition,
       updateProductPosition,
       updateShelfPosition,
-      finalizeShelfPosition,
       handleDragOver,
       handleDrop,
-      handleProductDrop,
       handleMouseMove,
       handleSectionHover,
       handleSectionHoverEnd,
-      handleShelfDragEnd
+      handleProductDetach
     }
   }
 })

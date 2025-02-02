@@ -11,29 +11,46 @@
       height: shelf.height,
       shelfData: shelf
     }"
-    @dragmove="updatePosition"
-    @dragend="finalizePosition"
+    @dragmove="handleDragMove"
+    @dragend="handleDragEnd"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
   >
     <v-rect :config="shelfConfig" />
+    <ProductComponent
+      v-for="product in products"
+      :key="product.id"
+      :product="product"
+      :relativeTo="true"
+    />
   </v-group>
 </template>
 
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
-import type { Shelf } from '../../types'
+import type { Shelf, Product } from '../../types'
+import type { KonvaEventObject } from 'konva/lib/Node'
+import ProductComponent from './ProductComponent.vue'
+import usePlanogramStore from '../../composables/usePlanogramStore'
 
 export default defineComponent({
   name: 'ShelfComponent',
+  components: {
+    ProductComponent
+  },
   props: {
     shelf: {
       type: Object as PropType<Shelf>,
       required: true
+    },
+    products: {
+      type: Array as PropType<Product[]>,
+      required: true
     }
   },
-  emits: ['update', 'finalize'],
+  emits: ['product-drag', 'product-detach'],
   setup(props, { emit }) {
+    const { updateShelfPosition, finalizeShelfPosition } = usePlanogramStore()
     const shelfConfig = {
       width: props.shelf.width,
       height: props.shelf.height,
@@ -44,15 +61,33 @@ export default defineComponent({
       subCategory: 'shelf'
     }
 
-    const updatePosition = (e: any) => {
-      emit('update', props.shelf.id)
-      const stage = e.target.getStage()
-      if (stage) stage.container().style.cursor = 'grabbing'
+    const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
+      const node = e.target
+      const pos = node.getAbsolutePosition()
+      // Update shelf position in store
+      updateShelfPosition({
+        id: props.shelf.id,
+        x: pos.x,
+        y: pos.y,
+        products: props.products.map(product => ({
+          id: product.id,
+          relativeX: product.relativeX!,
+          relativeY: product.relativeY!
+        }))
+      })
     }
 
-    const finalizePosition = (e: any) => {
-      const stage = e.target.getStage()
-      if (stage) stage.container().style.cursor = 'grab'
+    const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
+      const node = e.target
+      const pos = node.getAbsolutePosition()
+      
+      // Finalize position in store
+      finalizeShelfPosition({
+        id: props.shelf.id,
+        x: pos.x,
+        y: pos.y,
+        products: props.products
+      })
     }
 
     const handleMouseEnter = (e: any) => {
@@ -63,12 +98,36 @@ export default defineComponent({
       e.target.getStage().container().style.cursor = 'default'
     }
 
+    const handleProductDrag = (e: KonvaEventObject<DragEvent>) => {
+      const productNode = e.target
+      
+      emit('product-drag', {
+        productId: productNode.attrs.id,
+        x: productNode.x() - props.shelf.x,
+        y: productNode.y() - props.shelf.y
+      })
+    }
+
+    const handleProductDragStart = (productId: string) => {
+      // Convert to absolute position and detach from shelf
+      const product = props.products.find((p: Product) => p.id === productId)
+      if (product) {
+        emit('product-detach', {
+          productId,
+          absoluteX: props.shelf.x + (product.relativeX ?? 0),
+          absoluteY: props.shelf.y + (product.relativeY ?? 0)
+        })
+      }
+    }
+
     return {
       shelfConfig,
-      updatePosition,
-      finalizePosition,
+      handleDragMove,
+      handleDragEnd,
       handleMouseEnter,
-      handleMouseLeave
+      handleMouseLeave,
+      handleProductDrag,
+      handleProductDragStart
     }
   }
 })

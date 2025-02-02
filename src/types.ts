@@ -45,6 +45,8 @@ export interface Product {
   shelfId?: string | null
   relativeX?: number
   relativeY?: number
+  category: string
+  type: string
   // Add other product properties as needed
 }
 

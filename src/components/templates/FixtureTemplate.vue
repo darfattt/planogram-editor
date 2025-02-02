@@ -4,8 +4,10 @@
       class="template-item"
       draggable="true"
       @dragstart="(e) => {
-        e.dataTransfer.setData('text/plain', 'fixture');
-        e.dataTransfer.effectAllowed = 'move';
+        if (e.dataTransfer) {
+          e.dataTransfer.setData('text/plain', 'fixture');
+          e.dataTransfer.effectAllowed = 'move';
+        }
       }"
     >
       <div class="section-preview"></div>
@@ -15,8 +17,10 @@
       class="template-item"
       draggable="true"
       @dragstart="(e) => {
-        e.dataTransfer.setData('text/plain', 'shelf');
-        e.dataTransfer.effectAllowed = 'move';
+        if (e.dataTransfer) {
+          e.dataTransfer.setData('text/plain', 'shelf');
+          e.dataTransfer.effectAllowed = 'move';
+        }
       }"
     >
       <div class="shelf-preview"></div>

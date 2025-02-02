@@ -33,8 +33,8 @@ export interface Product {
   height: number;
   sectionId?: string;
   shelfId?: string;
-  relativeX?: number;
-  relativeY?: number;
+  relativeX: number;
+  relativeY: number;
   type?: string|'Product';
 }
 
