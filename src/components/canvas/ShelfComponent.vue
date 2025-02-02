@@ -32,6 +32,7 @@ import type { Shelf, Product } from '../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import ProductComponent from './ProductComponent.vue'
 import usePlanogramStore from '../../composables/usePlanogramStore'
+import { useDebugStore } from '../../composables/useDebugStore'
 
 export default defineComponent({
   name: 'ShelfComponent',
@@ -51,6 +52,7 @@ export default defineComponent({
   emits: ['product-drag', 'product-detach'],
   setup(props, { emit }) {
     const { updateShelfPosition, finalizeShelfPosition } = usePlanogramStore()
+    const debugStore = useDebugStore()
     const shelfConfig = {
       width: props.shelf.width,
       height: props.shelf.height,
@@ -63,21 +65,24 @@ export default defineComponent({
 
     const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
       const node = e.target
-      const pos = node.getAbsolutePosition()
+      const pos = node.getStage()?.getPointerPosition()
+      debugStore.setDragNodePosition(pos ?? { x: 0, y: 0 })
+      
       // Update shelf position in store
       updateShelfPosition({
         id: props.shelf.id,
-        x: pos.x,
-        y: pos.y,
+        x: pos?.x || 0,
+        y: pos?.y || 0,
         products: props.products.map(product => ({
           id: product.id,
-          relativeX: product.relativeX!,
-          relativeY: product.relativeY!
+          relativeX: product.relativeX ?? 0,
+          relativeY: product.relativeY ?? 0
         }))
       })
     }
 
     const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
+      debugStore.clearDragNodePosition()
       const node = e.target
       const pos = node.getAbsolutePosition()
       

@@ -1,17 +1,20 @@
 <template>
-  <div v-if="debugMode" class="debug-overlay">
-    X: {{ coordinates.x.toFixed(1) }} | Y: {{ coordinates.y.toFixed(1) }}
+  <div v-if="debugStore.debugMode" class="debug-overlay">
+    <div v-if="!debugStore.dragNodePosition">Mouse: {{ debugStore.coordinates.x.toFixed(1) }}, {{ debugStore.coordinates.y.toFixed(1) }}</div>
+    <div v-if="debugStore.dragNodePosition">
+      Node: {{ debugStore.dragNodePosition.x.toFixed(1) }}, {{ debugStore.dragNodePosition.y.toFixed(1) }}
+    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent, onMounted, onUnmounted } from 'vue'
-import useDebugStore from '../composables/useDebugStore'
+import { useDebugStore } from '../composables/useDebugStore'
 
 export default defineComponent({
   setup() {
     const debugStore = useDebugStore()
-    const { debugMode, coordinates, toggleDebug } = debugStore
+    const { debugMode, coordinates, toggleDebug, dragNodePosition } = debugStore
     
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key === 'd') {
@@ -30,7 +33,9 @@ export default defineComponent({
     return {
       debugMode,
       coordinates,
-      toggleDebug
+      toggleDebug,
+      dragNodePosition,
+      debugStore
     }
   }
 })

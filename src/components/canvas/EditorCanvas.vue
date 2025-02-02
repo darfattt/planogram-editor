@@ -48,7 +48,7 @@ import useDragAndDrop from '../../composables/useDragAndDrop'
 import ShelfComponent from '../../components/canvas/ShelfComponent.vue'
 import ProductComponent from '../../components/canvas/ProductComponent.vue'
 import { v4 as uuidv4 } from 'uuid'
-import useDebugStore from '../../composables/useDebugStore'
+import { useDebugStore } from '../../composables/useDebugStore'
 import type { Section } from '../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
 
@@ -69,7 +69,7 @@ export default defineComponent({
     } = usePlanogramStore()
 
     const { stageRef, findSectionAtPosition } = useDragAndDrop()
-    const { debugMode, coordinates } = useDebugStore()
+    const debugStore = useDebugStore()
 
     const stageConfig = {
       width: window.innerWidth - 250,
@@ -88,7 +88,7 @@ export default defineComponent({
 
     // Update mouse move handler
     const handleMouseMove = (e: KonvaEventObject<PointerEvent>) => {
-      if (!debugMode.value || !stageRef.value) return
+      if (!debugStore.debugMode || !stageRef.value) return
 
       const stage = stageRef.value.getStage()
       if (!stage) return
@@ -97,11 +97,8 @@ export default defineComponent({
       const pos = stage.getPointerPosition()
       if (!pos) return
       
-      // Update coordinates directly without transformation
-      coordinates.value = {
-        x: pos.x,
-        y: pos.y
-      }
+      // Update coordinates through store action
+      debugStore.updateCoordinates(pos)
     }
 
     // Add remaining logic and event handlers here
@@ -357,4 +354,5 @@ export default defineComponent({
 <style scoped>
 .konvajs-content {
   background-color: #fff;
-}</style>
+}
+</style>

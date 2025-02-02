@@ -22,6 +22,7 @@ import type { Product } from '../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Group } from 'konva/lib/Group'
 import type { Node } from 'konva/lib/Node'
+import { useDebugStore } from '../../composables/useDebugStore'
 
 export default defineComponent({
   name: 'ProductComponent',
@@ -59,14 +60,18 @@ export default defineComponent({
     }))
 
     const originalPosition = ref({ x: 0, y: 0 })
+    const debugStore = useDebugStore()
 
-    const handleDragMove = (e: any) => {
+    const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
+      const pos = e.target.getAbsolutePosition()
+      debugStore.setDragNodePosition(pos)
       const node = e.target
       node.x(node.x())
       node.y(node.y())
     }
 
     const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
+      debugStore.clearDragNodePosition()
       const node = e.target
       const absolutePos = node.getAbsolutePosition()
       const stage = node.getStage()
