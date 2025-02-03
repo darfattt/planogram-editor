@@ -51,7 +51,20 @@ export default function usePlanogramStore() {
       category: 'fixtures',
       subCategory: 'shelf'
     }
+    const testShelf2 = {
+      id: uuidv4(),
+      x: 500,
+      y: 550,
+      relativeX: 10,
+      relativeY: 200,
+      width: 380,
+      height: 10,
+      sectionId: testSection.id,
+      category: 'fixtures',
+      subCategory: 'shelf'
+    }
     shelves.value.push(testShelf)
+    shelves.value.push(testShelf2)
 
     // Test Product on Shelf
     products.value.push({
@@ -65,7 +78,7 @@ export default function usePlanogramStore() {
       sectionId: testSection.id,
       shelfId: testShelf.id,
       category: 'product',
-      type: 'productX'
+      type: 'food'
     })
 
     // Standalone Product

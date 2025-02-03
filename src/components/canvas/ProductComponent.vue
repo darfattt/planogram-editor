@@ -122,12 +122,13 @@ export default defineComponent({
           return false
         }
         const yTolerance = 10;
-        absolutePos.y = absolutePos.y+props.product.height;
+        console.log('absolutePos', absolutePos)
+        console.log('shelfPos : ' ,shelfPos)
         return (
           absolutePos.x >= shelfPos.x &&
           absolutePos.x <= shelfPos.x + shelfWidth &&
-          absolutePos.y + yTolerance >= shelfPos.y &&
-          absolutePos.y <= shelfPos.y + shelfHeight
+          absolutePos.y +props.product.height + yTolerance >= shelfPos.y &&
+          absolutePos.y +props.product.height <= shelfPos.y + shelfHeight
         )
       })
       console.log('targetShelf', targetShelf)
@@ -136,6 +137,20 @@ export default defineComponent({
         const shelfData = targetShelf.getAttr('shelfData')
         const absoluteX = absolutePos.x
         const shelfY = shelfData.y
+        const shelfPos = targetShelf.getAbsolutePosition()
+        
+        // Calculate relative position to shelf
+        const relativeX = absolutePos.x - shelfPos.x
+        const relativeY = absolutePos.y - shelfPos.y
+
+        // Move product node to target shelf group
+        node.moveTo(targetShelf)
+        
+        // Update position relative to new parent shelf
+        node.position({
+          x: relativeX,
+          y: relativeY
+        })
 
         // Instead of moving the node, update the product state
         emit('dragend', {
@@ -149,15 +164,13 @@ export default defineComponent({
         })
       } else {
         console.log('No target shelf found, reverting to original position')
-        // Revert to original position in state
+        node.position(originalPosition.value)
         emit('dragend', {
           id: props.product.id,
           x: originalPosition.value.x,
           y: originalPosition.value.y,
           relativeX: originalPosition.value.x,
-          relativeY: originalPosition.value.y,
-          shelfId: null,
-          sectionId: null
+          relativeY: originalPosition.value.y
         })
       }
     }
@@ -171,6 +184,10 @@ export default defineComponent({
     }
 
     const handleDragStart = (e: KonvaEventObject<DragEvent>) => {
+      originalPosition.value = {
+        x: e.target.x(),
+        y: e.target.y()
+      }
       emit('drag-start', props.product.id)
     }
 
