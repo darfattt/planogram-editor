@@ -2,11 +2,13 @@ import { ref, computed } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 import type { Section, Shelf, Product } from '../types'
 
-export default function usePlanogramStore() {
-  const sections = ref<Section[]>([])
-  const shelves = ref<Shelf[]>([])
-  const products = ref<Product[]>([])
+// Shared state outside the function
+const sections = ref<Section[]>([])
+const shelves = ref<Shelf[]>([])
+const products = ref<Product[]>([])
 
+export default function usePlanogramStore() {
+  // Keep the computed properties inside the function
   const standaloneProducts = computed(() => 
     products.value.filter(p => !p.sectionId && !p.shelfId)
   )
@@ -40,7 +42,7 @@ export default function usePlanogramStore() {
 
     // Test Shelf
     const testShelf = {
-      id: uuidv4(),
+      id: "shelf1",
       x: 500,
       y: 550,
       relativeX: 10,
@@ -52,7 +54,7 @@ export default function usePlanogramStore() {
       subCategory: 'shelf'
     }
     const testShelf2 = {
-      id: uuidv4(),
+      id: "shelf2", //uuidv4(),
       x: 500,
       y: 550,
       relativeX: 10,
@@ -69,10 +71,10 @@ export default function usePlanogramStore() {
     // Test Product on Shelf
     products.value.push({
       id: uuidv4(),
-      x: testSection.x + testShelf.relativeX + 50,
-      y: testSection.y + testShelf.relativeY - 40,
-      relativeX: testShelf.relativeX + 50,
-      relativeY: testShelf.relativeY - 105,
+      x: 100,
+      y: 100,
+      relativeX: 0,
+      relativeY: -51,
       width: 50,
       height: 50,
       sectionId: testSection.id,
@@ -144,6 +146,36 @@ export default function usePlanogramStore() {
     }
   }
 
+  const addProduct = (payload: {
+    x: number
+    y: number
+    width: number
+    height: number
+    color?: string
+    shelfId?: string
+    sectionId?: string
+    relativeX?: number
+    relativeY?: number
+  }) => {
+    const newProduct: Product = {
+      id: uuidv4(),
+      x: payload.x,
+      y: payload.y,
+      width: payload.width,
+      height: payload.height,
+      relativeX: payload.relativeX ?? 0,
+      relativeY: payload.relativeY ?? 0,
+      shelfId: payload.shelfId,
+      sectionId: payload.sectionId,
+      type: 'Food',
+      color: payload.color || '#81C784',
+      category: 'Product',
+    }
+    products.value.push(newProduct)
+    console.log('standaloneProducts', standaloneProducts.value.length)
+    return newProduct
+  }
+
   // Add methods for adding/updating items here
   // ...
 
@@ -158,6 +190,7 @@ export default function usePlanogramStore() {
     getProductsByShelf,
     initializeTestData,
     updateShelfPosition,
-    finalizeShelfPosition
+    finalizeShelfPosition,
+    addProduct
   }
 } 

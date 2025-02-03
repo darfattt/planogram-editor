@@ -1,14 +1,13 @@
 <template>
   <div class="product-template">
+    <div class="template-header">
+      <h3>Product Template</h3>
+      <button class="add-button" @click.stop.prevent="addProductToCanvas">+ Add New</button>
+    </div>
     <div
       class="template-item"
       draggable="true"
-      @dragstart="(e) => {
-        if (e.dataTransfer) {
-          e.dataTransfer.setData('text/plain', 'product');
-          e.dataTransfer.effectAllowed = 'move';
-        }
-      }"
+      @dragstart="handleDragStart"
     >
       <div class="product-preview"></div>
       <span>Product</span>
@@ -22,27 +21,68 @@ import type { DraggedItem } from '../../types'
 
 export default defineComponent({
   name: 'ProductTemplate',
-  emits: ['dragstart'],
+  emits: ['dragstart', 'add-product'],
   setup(_, { emit }) {
-    const handleDragStart = () => {
+    const handleDragStart = (e: DragEvent) => {
+      if (e.dataTransfer) {
+        const item: DraggedItem = {
+          type: 'product',
+          properties: {
+            width: 50,
+            height: 100
+          }
+        }
+        e.dataTransfer.setData('text/plain', 'product')
+        e.dataTransfer.setData('application/json', JSON.stringify(item))
+        e.dataTransfer.effectAllowed = 'move'
+      }
+    }
+
+    const addProductToCanvas = () => {
       const item: DraggedItem = {
         type: 'product',
         properties: {
           width: 50,
-          height: 100
+          height: 50,
         }
       }
-      emit('dragstart', item)
+      // Emit single product
+      emit('add-product', {
+        ...item,
+        position: { x: 100, y: 100 }
+      })
     }
 
     return {
-      handleDragStart
+      handleDragStart,
+      addProductToCanvas
     }
   }
 })
 </script>
 
 <style scoped>
+.template-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.add-button {
+  padding: 5px 10px;
+  background: #81C784;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.add-button:hover {
+  background: #66BB6A;
+}
+
 .product-template {
   display: flex;
   flex-direction: column;

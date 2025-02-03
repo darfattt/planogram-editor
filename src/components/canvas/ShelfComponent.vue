@@ -82,17 +82,18 @@ export default defineComponent({
     }
 
     const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
+      console.log('handleDragEnd', props.shelf.id)
       debugStore.clearDragNodePosition()
       const node = e.target
       const pos = node.getAbsolutePosition()
       
       // Finalize position in store
-      finalizeShelfPosition({
-        id: props.shelf.id,
-        x: pos.x,
-        y: pos.y,
-        products: props.products
-      })
+      // finalizeShelfPosition({
+      //   id: props.shelf.id,
+      //   x: pos.x,
+      //   y: pos.y,
+      //   products: props.products
+      // })
     }
 
     const handleMouseEnter = (e: any) => {

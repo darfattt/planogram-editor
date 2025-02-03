@@ -36,6 +36,7 @@ export interface Product {
   relativeX: number;
   relativeY: number;
   type?: string|'Product';
+  color?: string;
 }
 
 export interface DraggedItem {
@@ -43,5 +44,9 @@ export interface DraggedItem {
   properties: {
     width: number;
     height: number;
+  };
+  position?: {
+    x: number;
+    y: number;
   };
 } 

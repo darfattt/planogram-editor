@@ -47,6 +47,7 @@ export interface Product {
   relativeY?: number
   category: string
   type: string
+  color?: string
   // Add other product properties as needed
 }
 

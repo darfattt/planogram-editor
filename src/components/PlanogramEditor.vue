@@ -7,11 +7,19 @@
       </div>
       <div class="template-section">
         <h3>Products Template</h3>
-        <ProductTemplate @dragstart="handleDragStart" />
+        <ProductTemplate 
+          @dragstart="handleDragStart"
+          @add-product="handleAddProduct"
+        />
       </div>
     </div>
     <div class="workspace">
-      <EditorCanvas @drop="handleDrop" @dragover="handleDragOver"/>
+      <EditorCanvas 
+        ref="editorCanvasRef"
+        @drop="handleDrop" 
+        @dragover.prevent="handleDragOver"
+        class="editor-canvas"
+      />
     </div>
   </div>
 </template>
@@ -24,6 +32,7 @@ import EditorCanvas from './canvas/EditorCanvas.vue'
 import type { DraggedItem } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import Konva from 'konva'
+import usePlanogramStore from '../composables/usePlanogramStore'
 
 export default defineComponent({
   name: 'PlanogramEditor',
@@ -37,6 +46,7 @@ export default defineComponent({
     const draggedItem = ref<DraggedItem | null>(null)
     const stageRef = ref<Konva.Stage | null>(null)
     const nodes = ref<any[]>([])
+    const { addProduct } = usePlanogramStore()
 
     const handleDragStart = (item: DraggedItem) => {
       draggedItem.value = item
@@ -47,6 +57,7 @@ export default defineComponent({
     };
 
     const handleDrop = (e: Konva.KonvaEventObject<DragEvent>) => {
+      console.log('handleDrop')
       e.evt.preventDefault();
       const stage = stageRef.value?.getStage();
       const position = stage?.getPointerPosition();
@@ -75,6 +86,19 @@ export default defineComponent({
       draggedItem.value = null
     }
 
+    const handleAddProduct = (item: DraggedItem) => {
+      if (item.type === 'product') {
+        addProduct({
+          x: item.position?.x || 100,
+          y: item.position?.y || 100,
+          width: item.properties.width,
+          height: item.properties.height,
+          category: 'product',
+          type: 'default'
+        })
+      }
+    }
+
     return {
       draggedItem,
       handleDragStart,
@@ -82,7 +106,8 @@ export default defineComponent({
       handleDragOver,
       stageRef,
       nodes,
-      handleDragEnd
+      handleDragEnd,
+      handleAddProduct
     }
   }
 })

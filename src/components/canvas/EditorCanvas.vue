@@ -1,10 +1,13 @@
 <template>
+    <div><h1>standaloneProducts: {{ standaloneProducts.length }}</h1></div>
+    <div><h1>product by shelf: {{ getProductsByShelf('shelf1').length }}</h1></div>
   <v-stage
     ref="stageRef"
     :config="stageConfig"
     @dragover="handleDragOver"
     @drop="handleDrop"
     @pointermove="handleMouseMove"
+    v-bind="$attrs"
   >
     <v-layer>
       <!-- Sections -->
@@ -27,18 +30,18 @@
           @update="updateShelfPosition"
         >
         </ShelfComponent>
-      </v-group>
-<!-- 
+        </v-group>
+
+      <!-- Standalone Products -->
       <ProductComponent
         v-for="product in standaloneProducts"
         :key="product.id"
         :product="product"
-        category="product"
-        type="productX"
-        @dragend="handleProductDrop"
-      /> -->
+      />
     </v-layer>
   </v-stage>
+
+
 </template>
 
 <script lang="ts">
@@ -49,23 +52,28 @@ import ShelfComponent from '../../components/canvas/ShelfComponent.vue'
 import ProductComponent from '../../components/canvas/ProductComponent.vue'
 import { v4 as uuidv4 } from 'uuid'
 import { useDebugStore } from '../../composables/useDebugStore'
-import type { Section } from '../../types'
+import type { Section,DraggedItem } from '../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
 
 export default defineComponent({
+  name: 'EditorCanvas',
+  inheritAttrs: false,
+  emits: ['drop', 'dragover'],
   components: {
     ShelfComponent,
     ProductComponent,
   },
-  setup() {
+  setup(props, { emit }) {
     const {
       sections,
       shelves,
       products,
+      standaloneProducts,
       getShelvesBySection,
       getProductsBySection,
       getProductsByShelf,
-      initializeTestData
+      initializeTestData,
+      addProduct
     } = usePlanogramStore()
 
     const { stageRef, findSectionAtPosition } = useDragAndDrop()
@@ -267,33 +275,37 @@ export default defineComponent({
 
     const handleDragOver = (e: KonvaEventObject<DragEvent>) => {
       e.evt.preventDefault()
+      emit('dragover', e)
     }
 
     const handleDrop = (e: KonvaEventObject<DragEvent>) => {
       e.evt.preventDefault()
-      const data = e.evt.dataTransfer?.getData('application/json')
-      console.log('data', data)
-      if (!data) return
-
       try {
-        const item = JSON.parse(data)
-        const pos = stageRef.value?.getPointerPosition()
+        const type = e.evt.dataTransfer?.getData('text/plain')
+        if (type !== 'product') return
+        
+        const data = e.evt.dataTransfer?.getData('application/json')
+        if (!data) return
+
+        const item = JSON.parse(data) as DraggedItem
+        const stage = stageRef.value?.getStage()
+        const pos = stage?.getPointerPosition()
         if (!pos) return
 
-        // Add new item to store
-        if (item.type === 'section') {
-          sections.value.push({
-            id: uuidv4(),
+        if (item.type === 'product') {
+          addProduct({
             x: pos.x - item.properties.width/2,
             y: pos.y - item.properties.height/2,
             width: item.properties.width,
             height: item.properties.height,
-            name: 'New Section'
+            relativeX: 0,
+            relativeY: 0,
           })
         }
       } catch (error) {
-        console.error('Error handling drop:', error)
+        console.error('Drop error:', error)
       }
+      emit('drop', e)
     }
 
     const handleSectionHover = (e: KonvaEventObject<MouseEvent>) => {
@@ -332,6 +344,7 @@ export default defineComponent({
       sections,
       shelves,
       products,
+      standaloneProducts,
       getShelvesBySection,
       getProductsBySection,
       getProductsByShelf,
