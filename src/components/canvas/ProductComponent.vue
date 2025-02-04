@@ -83,142 +83,138 @@ export default defineComponent({
       const stage = node.getStage()
       if (!stage) return
 
-      // Find all relevant elements
-      const sections = stage.find((node: Node) => {
-        return node.getType() === 'Group' && 
-               node.getAttr('category') === 'fixtures' && 
-               node.getAttr('subCategory') === 'section'
-      })
+      // Helper function to find relevant elements
+      const findElements = () => {
+        const sections = stage.find((node: Node) => 
+          node.getType() === 'Group' && 
+          node.getAttr('category') === 'fixtures' && 
+          node.getAttr('subCategory') === 'section'
+        )
 
-      // Find shelves and products
-      const shelves = sections.flatMap(section => {
-        const sectionGroup = section as Group
-        return sectionGroup.getChildren(child => {
-          return child.getAttr('category') === 'fixtures' && 
-                 child.getAttr('subCategory') === 'shelf'
-        })
-      }).map(shelf => shelf as Group)
-      console.log('Found sections:', sections.length, sections.map(s => ({ 
-        id: s.id, 
-        pos: s.getAbsolutePosition(),
-        category: s.getAttr('category'),
-        subCategory: s.getAttr('subCategory')
-      })))
-      const allProducts = shelves.flatMap(shelf => {
-        const children = shelf.getChildren(child => {
-          return child.getAttr('category') === 'product' || 
-                 child.getAttr('type') === 'product'
-        });
-        console.log('Shelf children:', shelf.id(), children.map(c => ({ 
-          id: c.id(), 
-          category: c.getAttr('category'),
-          type: c.getType(),
-          attrs: c.getAttrs()
-        })));
-        return children;
-      }).filter(p => p.id() !== props.product.id)
-      console.log('allProducts', allProducts)
-      // Find shelf or product to snap to
-      const targetShelf = shelves.find(shelf => {
+        const shelves = sections.flatMap(section => 
+          (section as Group).getChildren(child => 
+            child.getAttr('category') === 'fixtures' && 
+            child.getAttr('subCategory') === 'shelf'
+          )
+        ) as Group[]
+
+        const allProducts = shelves.flatMap(shelf => 
+          shelf.getChildren(child => 
+            child.getAttr('category').toLowerCase() === 'product'
+          )
+        ).filter(p => p.id() !== props.product.id)
+
+        return { shelves, allProducts }
+      }
+      const yOffsetProductOnTopOfShelf = 3
+      // Position calculation helpers
+      const getShelfPositionData = (shelf: Group) => {
         const shelfPos = shelf.getAbsolutePosition()
+        console.log('shelfPos', shelfPos)
+        const shelfData = shelf.getAttr('shelfData')
+        console.log('shelfData', shelfData)
+        console.log(absolutePos.x - shelfPos.x)
+        console.log(absolutePos.y - shelfPos.y)
+        
+        return {
+          relativeX: absolutePos.x - shelfPos.x,
+          relativeY: (- props.product.height) - yOffsetProductOnTopOfShelf,
+          shelfPos,
+          shelfData
+        }
+      }
+
+      const getProductPositionData = (product: Node) => {
+        const productPos = product.getAbsolutePosition()
+        console.log('productPos', productPos)
+        const yOffsetProductOnTopOfProduct = 3;
+        const relativeY = product.getAttr('y') - props.product.height - yOffsetProductOnTopOfProduct;
+        console.log('relativeY', relativeY);
+        return {
+          relativeX: product.getAttr('x'),
+          relativeY: relativeY,
+          parentGroup: product.getParent(),
+          productAttrs: product.getAttrs()
+        }
+      }
+
+      // Determine drag result type
+      const { shelves, allProducts } = findElements()
+      
+      const targetShelf = shelves.find(shelf => {
+        const { shelfPos, shelfData } = getShelfPositionData(shelf)
         const shelfWidth = shelf.getAttr('width')
         const shelfHeight = shelf.getAttr('height')
-        const shelfData = shelf.getAttr('shelfData')
-        
-        if (!shelfData || !shelfWidth || !shelfHeight) {
-          console.warn('Missing shelf data:', { 
-            id: shelf.id(),
-            shelfData, 
-            shelfWidth, 
-            shelfHeight 
-          })
-          return false
-        }
-		
-	      const yTolerance = 10;
-        console.log('absolutePos', absolutePos)
-        console.log('shelfPos : ' ,shelfPos)
-        return (
+        const yTolerance = 10
+
+        return shelfData && shelfWidth && shelfHeight && (
           absolutePos.x >= shelfPos.x &&
           absolutePos.x <= shelfPos.x + shelfWidth &&
-          absolutePos.y +props.product.height + yTolerance >= shelfPos.y &&
-          absolutePos.y +props.product.height <= shelfPos.y + shelfHeight
+          absolutePos.y + props.product.height + yTolerance >= shelfPos.y &&
+          absolutePos.y + props.product.height <= shelfPos.y + shelfHeight
         )
       })
-      console.log('targetShelf', targetShelf)
-      const targetProduct = allProducts.find(product => {
+
+      const targetProduct = targetShelf ? null : allProducts.find(product => {
+        console.log('product', product);
         const productPos = product.getAbsolutePosition()
-        const productHeight = product.getAttr('height')
-        const yTolerance = 10;
-
-        console.log('productPos', productPos)
-        console.log('productHeight', productHeight)
-        console.log(absolutePos.y + yTolerance ,' y >= ', productPos.y - productHeight )
-        console.log(absolutePos.y,' y <= ', productPos.y + productHeight)
-        console.log(absolutePos.x,' x >= ', productPos.x)
-        console.log(absolutePos.x,' x <= ', productPos.x + product.getAttr('width'))
+        const yTolerance = 10
+        const xTolerance = 5
         return (
-          absolutePos.x >= productPos.x &&
-          absolutePos.x <= productPos.x + product.getAttr('width') &&
-          absolutePos.y + yTolerance >= productPos.y - productHeight &&
-          absolutePos.y <= productPos.y + productHeight
+          absolutePos.x + product.getAttr('width') + xTolerance >= productPos.x  &&
+          absolutePos.x <= productPos.x + product.getAttr('width') + xTolerance &&
+          absolutePos.y + yTolerance >= productPos.y - product.getAttr('height') &&
+          absolutePos.y <= productPos.y + product.getAttr('height')
         )
       })
-      console.log('targetProduct', targetProduct);
-      if (targetShelf) {
-        const shelfData = targetShelf.getAttr('shelfData')
-        const shelfPos = targetShelf.getAbsolutePosition()
-        
-        // Calculate shelf-relative position
-        const relativeX = absolutePos.x - shelfPos.x
-        const relativeY = absolutePos.y - shelfPos.y
 
-        node.moveTo(targetShelf)
-        node.position({ x: relativeX, y: relativeY })
+      // Handle final positioning
+      const handlePositioning = () => {
+        console.log('props.product', props.product);
+        console.log('targetShelf', targetShelf)
+        if (targetShelf) {
+          const { relativeX, relativeY, shelfPos, shelfData } = getShelfPositionData(targetShelf)
+          node.moveTo(targetShelf).position({ x: relativeX, y: relativeY })
+          return {
+            x: absolutePos.x,
+            y: absolutePos.y - props.product.height,
+            relativeX,
+            relativeY,
+            shelfId: shelfData.id,
+            sectionId: shelfData.sectionId
+          }
+        }
+        console.log('targetProduct', targetProduct)
+        if (targetProduct) {
+          console.log('targetProduct', targetProduct)
+          const { relativeX, relativeY, parentGroup, productAttrs } = getProductPositionData(targetProduct)
+          console.log('relative(X,Y)', relativeX,relativeY)
+          node.moveTo(parentGroup).position({ x: relativeX, y: relativeY })
+          return {
+            x: absolutePos.x,
+            y: absolutePos.y,
+            relativeX,
+            relativeY,
+            shelfId: productAttrs.shelfId,
+            sectionId: productAttrs.sectionId,
+            parentProductId: targetProduct.id()
+          }
+        }
 
-        emit('dragend', {
-          id: props.product.id,
-          x: absolutePos.x,
-          y: shelfPos.y - props.product.height,
-          relativeX: relativeX,
-          relativeY: shelfPos.y - shelfData.y - props.product.height,
-          shelfId: shelfData.id,
-          sectionId: shelfData.sectionId,
-          parentProductId: null
-        })
-      } else if (targetProduct) {
-        const productPos = targetProduct.getAbsolutePosition()
-        const parentGroup = targetProduct.getParent()
-
-        // Calculate product-relative position
-        const relativeX = absolutePos.x - productPos.x
-        const relativeY = absolutePos.y - productPos.y - props.product.height
-        console.log('relativeX', relativeX)
-        console.log('relativeY', relativeY)
-        node.moveTo(parentGroup)
-        node.position({ x: relativeX, y: relativeY })
-
-        emit('dragend', {
-          id: props.product.id,
-          x: absolutePos.x,
-          y: absolutePos.y,
-          relativeX: relativeX,
-          relativeY: relativeY,
-          shelfId: targetProduct.getAttr('shelfId'),
-          sectionId: targetProduct.getAttr('sectionId'),
-          parentProductId: targetProduct.id()
-        })
-      } else {
         node.position(originalPosition.value)
-        emit('dragend', {
-          id: props.product.id,
-          x: originalPosition.value.x,
-          y: originalPosition.value.y,
+        return {
+          ...originalPosition.value,
           relativeX: originalPosition.value.x,
-          relativeY: originalPosition.value.y,
-          parentProductId: null
-        })
+          relativeY: originalPosition.value.y
+        }
       }
+
+      const positionData = handlePositioning()
+      emit('dragend', {
+        id: props.product.id,
+        parentProductId: null,
+        ...positionData
+      })
     }
 
     const handleMouseEnter = (e: any) => {

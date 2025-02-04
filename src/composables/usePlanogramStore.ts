@@ -70,7 +70,7 @@ export default function usePlanogramStore() {
 
     // Test Product on Shelf
     products.value.push({
-      id: uuidv4(),
+      id: 'product1',
       x: 100,
       y: 100,
       relativeX: 0,
@@ -85,13 +85,22 @@ export default function usePlanogramStore() {
 
     // Standalone Product
     products.value.push({
-      id: uuidv4(),
+      id: 'product2',
       x: 400,
       y: 200,
       width: 50,
       height: 50,
       category: 'product',
       type: 'Drink'
+    })
+    products.value.push({
+      id: 'product3',
+      x: 300,
+      y: 200,
+      width: 50,
+      height: 50,
+      category: 'product',
+      type: 'Medicine'
     })
   }
 
@@ -169,10 +178,10 @@ export default function usePlanogramStore() {
       sectionId: payload.sectionId,
       type: 'Food',
       color: payload.color || '#81C784',
-      category: 'Product',
+      category: 'product',
     }
     products.value.push(newProduct)
-    console.log('standaloneProducts', standaloneProducts.value.length)
+    console.log('newProduct', newProduct);
     return newProduct
   }
 
