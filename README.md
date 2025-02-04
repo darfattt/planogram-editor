@@ -1,6 +1,6 @@
 # Planogram Editor
 
-![Planogram Editor Screenshot](./screenshot.png)
+![Planogram Editor Screenshot](./blob/main/screenshoot.png)
 
 A desktop application for creating and editing retail planograms with 2D visualization capabilities.
 
