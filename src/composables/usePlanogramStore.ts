@@ -80,7 +80,7 @@ export default function usePlanogramStore() {
       sectionId: testSection.id,
       shelfId: testShelf.id,
       category: 'product',
-      type: 'food'
+      type: 'Food'
     })
 
     // Standalone Product
@@ -91,7 +91,7 @@ export default function usePlanogramStore() {
       width: 50,
       height: 50,
       category: 'product',
-      type: 'productX'
+      type: 'Drink'
     })
   }
 
@@ -147,24 +147,24 @@ export default function usePlanogramStore() {
   }
 
   const addProduct = (payload: {
-    x: number
-    y: number
+    x: number  // Canvas absolute X (matches node.x() when standalone)
+    y: number  // Canvas absolute Y (matches node.y() when standalone)
     width: number
     height: number
     color?: string
     shelfId?: string
     sectionId?: string
-    relativeX?: number
-    relativeY?: number
+    relativeX?: number  // X relative to parent shelf (if in shelf)
+    relativeY?: number  // Y relative to parent shelf (if in shelf)
   }) => {
     const newProduct: Product = {
       id: uuidv4(),
-      x: payload.x,
-      y: payload.y,
+      x: payload.shelfId ? payload.relativeX ?? 0 : payload.x,  // If in shelf, use relativeX
+      y: payload.shelfId ? payload.relativeY ?? 0 : payload.y,  // If in shelf, use relativeY
       width: payload.width,
       height: payload.height,
-      relativeX: payload.relativeX ?? 0,
-      relativeY: payload.relativeY ?? 0,
+      relativeX: payload.relativeX ?? (payload.shelfId ? payload.x : 0),  // Store canvas X as relativeX when adding to shelf
+      relativeY: payload.relativeY ?? (payload.shelfId ? payload.y : 0),
       shelfId: payload.shelfId,
       sectionId: payload.sectionId,
       type: 'Food',
