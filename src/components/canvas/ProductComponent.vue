@@ -15,6 +15,7 @@
     @dragend="handleDragEnd"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
+    @click="handleClick"
   >
     <v-rect :config="productConfig" />
   </v-group>
@@ -27,6 +28,8 @@ import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Group } from 'konva/lib/Group'
 import type { Node } from 'konva/lib/Node'
 import { useDebugStore } from '../../composables/useDebugStore'
+import useClipboardStore from '../../composables/useClipboardStore'
+import usePlanogramStore from '../../composables/usePlanogramStore'
 
 export default defineComponent({
   name: 'ProductComponent',
@@ -51,22 +54,22 @@ export default defineComponent({
   emits: ['dragend', 'drag-start'],
   setup(props, { emit }) {
     const productConfig = computed(() => ({
+      id: props.product.id,
+      x: props.product.x,
+      y: props.product.y,
       width: props.product.width,
       height: props.product.height,
       fill: '#81C784',
       stroke: '#66bb6a',
-      strokeWidth: 1,
-      // Add shadow for better visual feedback
-      shadowColor: 'black',
-      shadowBlur: 5,
-      shadowOpacity: 0.2,
-      shadowOffset: { x: 2, y: 2 },
-      category: props.category,
-      type: props.type
+      strokeWidth: isSelected ? 2 : 1,
+      draggable: true
     }))
 
     const originalPosition = ref({ x: 0, y: 0 })
     const debugStore = useDebugStore()
+    const clipboard = useClipboardStore()
+    const { products } = usePlanogramStore()
+    let isSelected = false
 
     const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
       const pos = e.target.getAbsolutePosition()
@@ -100,7 +103,7 @@ export default defineComponent({
 
         const allProducts = shelves.flatMap(shelf => 
           shelf.getChildren(child => 
-            child.getAttr('category').toLowerCase() === 'product'
+            child.getAttr('category')?.toLowerCase() === 'product'
           )
         ).filter(p => p.id() !== props.product.id)
 
@@ -233,6 +236,39 @@ export default defineComponent({
       emit('drag-start', props.product.id)
     }
 
+    const handleClick = () => {
+      isSelected = true
+      // Handle keyboard events when product is selected
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (!isSelected) return
+        if (e.ctrlKey || e.metaKey) { // metaKey for Mac
+          switch(e.key.toLowerCase()) {
+            case 'c':
+              clipboard.copyToClipboard(props.product)
+              break
+            case 'x':
+              const id = clipboard.cutToClipboard(props.product)
+              products.value = products.value.filter(p => p.id !== id)
+              break
+            case 'v':
+              const newProduct = clipboard.getFromClipboard()
+              if (newProduct) {
+                products.value.push(newProduct)
+              }
+              break
+          }
+        }
+      }
+
+      window.addEventListener('keydown', handleKeyDown)
+      
+      // Cleanup
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown)
+        isSelected = false
+      }
+    }
+
     return {
       productConfig,
       handleDragMove,
@@ -240,7 +276,8 @@ export default defineComponent({
       handleMouseEnter,
       handleMouseLeave,
       originalPosition,
-      handleDragStart
+      handleDragStart,
+      handleClick
     }
   }
 })
