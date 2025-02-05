@@ -7,6 +7,7 @@
     @dragover="handleDragOver"
     @drop="handleDrop"
     @pointermove="handleMouseMove"
+    @click="handleStageClick"
     v-bind="$attrs"
   >
     <v-layer>
@@ -54,6 +55,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { useDebugStore } from '../../composables/useDebugStore'
 import type { Section,DraggedItem } from '../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
+import { useSelectionStore } from '../../composables/useSelectionStore'
 
 export default defineComponent({
   name: 'EditorCanvas',
@@ -78,6 +80,7 @@ export default defineComponent({
 
     const { stageRef, findSectionAtPosition } = useDragAndDrop()
     const debugStore = useDebugStore()
+    const selectionStore = useSelectionStore()
 
     const stageConfig = {
       width: window.innerWidth - 250,
@@ -338,6 +341,13 @@ export default defineComponent({
       }
     }
 
+    const handleStageClick = (e: KonvaEventObject<MouseEvent>) => {
+      // Clear selection when clicking on empty canvas
+      if (e.target === e.target.getStage()) {
+        selectionStore.clearSelection()
+      }
+    }
+
     return {
       stageRef,
       stageConfig,
@@ -358,7 +368,8 @@ export default defineComponent({
       handleMouseMove,
       handleSectionHover,
       handleSectionHoverEnd,
-      handleProductDetach
+      handleProductDetach,
+      handleStageClick
     }
   }
 })

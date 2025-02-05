@@ -24,12 +24,13 @@
 <script lang="ts">
 import { defineComponent, computed, type PropType, ref } from 'vue'
 import type { Product } from '../../types'
-import type { KonvaEventObject } from 'konva/lib/Node'
+import type { KonvaEventObject, NodeConfig } from 'konva/lib/Node'
 import type { Group } from 'konva/lib/Group'
 import type { Node } from 'konva/lib/Node'
 import { useDebugStore } from '../../composables/useDebugStore'
 import useClipboardStore from '../../composables/useClipboardStore'
 import usePlanogramStore from '../../composables/usePlanogramStore'
+import { useSelectionStore } from '../../composables/useSelectionStore'
 
 export default defineComponent({
   name: 'ProductComponent',
@@ -53,6 +54,13 @@ export default defineComponent({
   },
   emits: ['dragend', 'drag-start'],
   setup(props, { emit }) {
+    const clipboard = useClipboardStore()
+    const selectionStore = useSelectionStore()
+
+    const isSelected = computed(() => 
+      selectionStore.selectedIds.value.includes(props.product.id)
+    )
+
     const productConfig = computed(() => ({
       id: props.product.id,
       x: props.product.x,
@@ -60,16 +68,18 @@ export default defineComponent({
       width: props.product.width,
       height: props.product.height,
       fill: '#81C784',
-      stroke: '#66bb6a',
-      strokeWidth: isSelected ? 2 : 1,
+      stroke: isSelected.value ? '#2196F3' : '#66bb6a',
+      strokeWidth: isSelected.value ? 2 : 1,
+      shadowColor: isSelected.value ? '#2196F3' : undefined,
+      shadowBlur: isSelected.value ? 10 : 0,
+      shadowOpacity: isSelected.value ? 0.3 : 0,
       draggable: true
     }))
 
     const originalPosition = ref({ x: 0, y: 0 })
     const debugStore = useDebugStore()
-    const clipboard = useClipboardStore()
     const { products } = usePlanogramStore()
-    let isSelected = false
+    const originalNodeGroup = ref<Group | null>(null)
 
     const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
       const pos = e.target.getAbsolutePosition()
@@ -103,10 +113,10 @@ export default defineComponent({
 
         const allProducts = shelves.flatMap(shelf => 
           shelf.getChildren(child => 
-            child.getAttr('category')?.toLowerCase() === 'product'
+            child.getAttr('category') === 'product'
           )
         ).filter(p => p.id() !== props.product.id)
-
+        console.log('allProducts', allProducts)
         return { shelves, allProducts }
       }
       const yOffsetProductOnTopOfShelf = 3
@@ -159,7 +169,6 @@ export default defineComponent({
       })
 
       const targetProduct = targetShelf ? null : allProducts.find(product => {
-        console.log('product', product);
         const productPos = product.getAbsolutePosition()
         const yTolerance = 10
         const xTolerance = 5
@@ -204,7 +213,8 @@ export default defineComponent({
           }
         }
 
-        node.position(originalPosition.value)
+        node.moveTo(originalNodeGroup.value).position(originalPosition.value)
+        
         return {
           ...originalPosition.value,
           relativeX: originalPosition.value.x,
@@ -229,43 +239,28 @@ export default defineComponent({
     }
 
     const handleDragStart = (e: KonvaEventObject<DragEvent>) => {
+      // Select product when drag starts
+      selectionStore.selectOne(props.product.id)
+      
       originalPosition.value = {
         x: e.target.x(),
         y: e.target.y()
       }
+      originalNodeGroup.value = e.target.getParent() as Group
+      originalNodeGroup.value.removeName(e.target);
+      
       emit('drag-start', props.product.id)
     }
 
-    const handleClick = () => {
-      isSelected = true
-      // Handle keyboard events when product is selected
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (!isSelected) return
-        if (e.ctrlKey || e.metaKey) { // metaKey for Mac
-          switch(e.key.toLowerCase()) {
-            case 'c':
-              clipboard.copyToClipboard(props.product)
-              break
-            case 'x':
-              const id = clipboard.cutToClipboard(props.product)
-              products.value = products.value.filter(p => p.id !== id)
-              break
-            case 'v':
-              const newProduct = clipboard.getFromClipboard()
-              if (newProduct) {
-                products.value.push(newProduct)
-              }
-              break
-          }
-        }
-      }
-
-      window.addEventListener('keydown', handleKeyDown)
+    const handleClick = (e: KonvaEventObject<MouseEvent>) => {
+      const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey
       
-      // Cleanup
-      return () => {
-        window.removeEventListener('keydown', handleKeyDown)
-        isSelected = false
+      if (!metaPressed) {
+        // Single selection
+        selectionStore.selectOne(props.product.id)
+      } else {
+        // Multi selection
+        selectionStore.toggleSelection(props.product.id)
       }
     }
 
