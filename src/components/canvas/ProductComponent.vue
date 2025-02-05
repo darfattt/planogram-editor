@@ -50,7 +50,7 @@ export default defineComponent({
       default: false
     }
   },
-  emits: ['dragend', 'drag-start'],
+  emits: ['dragend', 'drag-start', 'update-position'],
   setup(props, { emit }) {
     const selectionStore = useSelectionStore()
     const isSelected = computed(() => 
@@ -180,7 +180,11 @@ export default defineComponent({
         console.log('targetShelf', targetShelf)
         if (targetShelf) {
           const { relativeX, relativeY, shelfPos, shelfData } = getShelfPositionData(targetShelf)
-          node.moveTo(targetShelf).position({ x: relativeX, y: relativeY })
+          const shelfChildren = targetShelf.getChildren()
+          node.moveTo(targetShelf)
+          targetShelf.add(node)
+          node.position({ x: relativeX, y: relativeY })
+          node.zIndex(shelfChildren.length)
           return {
             x: absolutePos.x,
             y: absolutePos.y - props.product.height,
@@ -216,10 +220,20 @@ export default defineComponent({
       }
 
       const positionData = handlePositioning()
+      
       emit('dragend', {
         id: props.product.id,
         parentProductId: null,
         ...positionData
+      })
+      
+      // Emit the position update
+      emit('update-position', {
+        id: props.product.id,
+        x: positionData.x,
+        y: positionData.y,
+        relativeX: positionData.relativeX,
+        relativeY: positionData.relativeY
       })
     }
 

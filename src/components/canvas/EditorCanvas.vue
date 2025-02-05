@@ -29,8 +29,8 @@
           :key="shelf.id"
           :shelf="shelf"
           :products="getProductsByShelf(shelf.id)"
-          @update="updateShelfPosition"
           @click="handleShelfClick"
+          @update-position="handleProductPositionUpdate"
         >
         </ShelfComponent>
         </v-group>
@@ -77,7 +77,8 @@ export default defineComponent({
       getProductsBySection,
       getProductsByShelf,
       initializeTestData,
-      addProduct
+      addProduct,
+      updateProductPosition
     } = usePlanogramStore()
 
     const { stageRef, findSectionAtPosition } = useDragAndDrop()
@@ -153,91 +154,14 @@ export default defineComponent({
       section.y = newY
     }
 
-    const updateProductPosition = (productId: string) => {
-      const product = products.value.find(p => p.id === productId)
-      if (!product || !stageRef.value) return
-      
-      const group = stageRef.value.getStage().findOne(`#${productId}`)
-      if (!group) return
-
-      const pos = group.getAbsolutePosition()
-      let absoluteX = pos.x
-      let absoluteY = pos.y
-
-      // Update cache for shelf positions
-      shelves.value.forEach((s: {
-        id: string;
-        sectionId?: string | null;
-        relativeX?: number;
-        relativeY?: number;
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-      }) => {
-        if (!shelfPositionCache.has(s.id)) {
-          const shelfAbsX = s.sectionId 
-            ? sections.value.find((sec: Section) => sec.id === s.sectionId)?.x! + s.relativeX!
-            : s.x
-          const shelfAbsY = s.sectionId 
-            ? sections.value.find((sec: Section) => sec.id === s.sectionId)?.y! + s.relativeY!
-            : s.y
-          shelfPositionCache.set(s.id, { x: shelfAbsX, y: shelfAbsY })
-        }
-      })
-
-      // Find target shelf using cached positions
-      const targetShelf = shelves.value.find(s => {
-        const { x: shelfAbsX, y: shelfAbsY } = shelfPositionCache.get(s.id)!
-        return (
-          absoluteX >= shelfAbsX &&
-          absoluteX <= shelfAbsX + s.width &&
-          absoluteY >= shelfAbsY - 20 &&
-          absoluteY <= shelfAbsY + s.height + 20
-        )
-      })
-
-      if (targetShelf) {
-        const { x: shelfAbsX, y: shelfAbsY } = shelfPositionCache.get(targetShelf.id)!
-        
-        // Snap to shelf surface (top edge)
-        absoluteY = shelfAbsY - product.height  // Position product on top of shelf
-        
-        // Clamp X position within shelf width
-        absoluteX = Math.max(
-          shelfAbsX,
-          Math.min(absoluteX, shelfAbsX + targetShelf.width - product.width)
-        )
-        
-        // Only update if position changed
-        if (product.x !== absoluteX || product.y !== absoluteY) {
-          product.x = absoluteX
-          product.y = absoluteY
-          product.shelfId = targetShelf.id
-          product.sectionId = targetShelf.sectionId
-          
-          if (product.sectionId) {
-            const section = sections.value.find((sec: Section) => sec.id === product.sectionId)!
-            product.relativeX = absoluteX - section.x
-            product.relativeY = absoluteY - section.y
-          }
-        }
-      } else {
-        console.log('No valid shelf - reverting position')
-        // Revert to original position
-        absoluteX = product.x
-        absoluteY = product.y
-      }
-
-      // Always update position (either snapped or reverted)
-      product.x = absoluteX
-      product.y = absoluteY
-      product.shelfId = targetShelf?.id || null
-      product.sectionId = targetShelf?.sectionId || null
-
-      // Force Konva position update
-      group.x(absoluteX)
-      group.y(absoluteY)
+    const handleProductPositionUpdate = (payload: {
+      id: string
+      x: number
+      y: number
+      relativeX?: number
+      relativeY?: number
+    }) => {
+      updateProductPosition(payload)
     }
 
     const updateShelfPosition = (payload: {
@@ -383,7 +307,8 @@ export default defineComponent({
       handleProductDetach,
       handleStageClick,
       handleSectionClick,
-      handleShelfClick
+      handleShelfClick,
+      handleProductPositionUpdate
     }
   }
 })
