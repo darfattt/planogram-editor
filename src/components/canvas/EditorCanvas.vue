@@ -7,6 +7,7 @@
     @dragover="handleDragOver"
     @drop="handleDrop"
     @pointermove="handleMouseMove"
+    @click="handleStageClick"
     v-bind="$attrs"
   >
     <v-layer>
@@ -18,6 +19,7 @@
         @dragmove="updateSectionPosition(section.id)"
         @mouseenter="handleSectionHover"
         @mouseleave="handleSectionHoverEnd"
+        @click="handleSectionClick"
       >
         <v-rect :config="sectionRectConfig(section)" />
         
@@ -28,6 +30,7 @@
           :shelf="shelf"
           :products="getProductsByShelf(shelf.id)"
           @update="updateShelfPosition"
+          @click="handleShelfClick"
         >
         </ShelfComponent>
         </v-group>
@@ -54,6 +57,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { useDebugStore } from '../../composables/useDebugStore'
 import type { Section,DraggedItem } from '../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
+import { useSelectionStore } from '../../composables/useSelectionStore'
 
 export default defineComponent({
   name: 'EditorCanvas',
@@ -78,6 +82,7 @@ export default defineComponent({
 
     const { stageRef, findSectionAtPosition } = useDragAndDrop()
     const debugStore = useDebugStore()
+    const selectionStore = useSelectionStore()
 
     const stageConfig = {
       width: window.innerWidth - 250,
@@ -338,6 +343,23 @@ export default defineComponent({
       }
     }
 
+    const handleStageClick = (e: KonvaEventObject<MouseEvent>) => {
+      // Clear selection when clicking empty canvas
+      if (e.target === e.target.getStage()) {
+        selectionStore.clearSelection()
+      }
+    }
+
+    const handleSectionClick = (e: KonvaEventObject<MouseEvent>) => {
+      e.cancelBubble = true // Stop event from reaching stage
+      selectionStore.clearSelection()
+    }
+
+    const handleShelfClick = (e: KonvaEventObject<MouseEvent>) => {
+      e.cancelBubble = true // Stop event from reaching section/stage
+      selectionStore.clearSelection()
+    }
+
     return {
       stageRef,
       stageConfig,
@@ -358,7 +380,10 @@ export default defineComponent({
       handleMouseMove,
       handleSectionHover,
       handleSectionHoverEnd,
-      handleProductDetach
+      handleProductDetach,
+      handleStageClick,
+      handleSectionClick,
+      handleShelfClick
     }
   }
 })
