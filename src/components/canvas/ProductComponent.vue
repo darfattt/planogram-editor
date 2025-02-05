@@ -15,6 +15,7 @@
     @dragend="handleDragEnd"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
+    @click="handleClick"
   >
     <v-rect :config="productConfig" />
   </v-group>
@@ -27,6 +28,7 @@ import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Group } from 'konva/lib/Group'
 import type { Node } from 'konva/lib/Node'
 import { useDebugStore } from '../../composables/useDebugStore'
+import { useSelectionStore } from '../../composables/useSelectionStore'
 
 export default defineComponent({
   name: 'ProductComponent',
@@ -50,16 +52,20 @@ export default defineComponent({
   },
   emits: ['dragend', 'drag-start'],
   setup(props, { emit }) {
+    const selectionStore = useSelectionStore()
+    const isSelected = computed(() => 
+      selectionStore.selectedIds.value.includes(props.product.id)
+    )
+
     const productConfig = computed(() => ({
       width: props.product.width,
       height: props.product.height,
       fill: '#81C784',
-      stroke: '#66bb6a',
-      strokeWidth: 1,
-      // Add shadow for better visual feedback
-      shadowColor: 'black',
-      shadowBlur: 5,
-      shadowOpacity: 0.2,
+      stroke: isSelected.value ? '#2196F3' : '#66bb6a',
+      strokeWidth: isSelected.value ? 2 : 1,
+      shadowColor: isSelected.value ? '#2196F3' : undefined,
+      shadowBlur: isSelected.value ? 10 : 0,
+      shadowOpacity: isSelected.value ? 0.3 : 0,
       shadowOffset: { x: 2, y: 2 },
       category: props.category,
       type: props.type
@@ -230,7 +236,19 @@ export default defineComponent({
         x: e.target.x(),
         y: e.target.y()
       }
+      // Select product when drag starts
+      selectionStore.selectOne(props.product.id)
+      
       emit('drag-start', props.product.id)
+    }
+
+    const handleClick = (e: KonvaEventObject<MouseEvent>) => {
+      const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey
+      if (!metaPressed) {
+        selectionStore.selectOne(props.product.id)
+      } else {
+        selectionStore.toggleSelection(props.product.id)
+      }
     }
 
     return {
@@ -240,7 +258,8 @@ export default defineComponent({
       handleMouseEnter,
       handleMouseLeave,
       originalPosition,
-      handleDragStart
+      handleDragStart,
+      handleClick
     }
   }
 })
