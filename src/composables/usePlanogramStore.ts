@@ -185,6 +185,25 @@ export default function usePlanogramStore() {
     return newProduct
   }
 
+  const updateProductPosition = (payload: {
+    id: string
+    x: number
+    y: number
+    relativeX?: number
+    relativeY?: number
+  }) => {
+    const index = products.value.findIndex(p => p.id === payload.id)
+    if (index === -1) return
+    
+    products.value[index] = {
+      ...products.value[index],
+      x: payload.x,
+      y: payload.y,
+      relativeX: payload.relativeX ?? products.value[index].relativeX,
+      relativeY: payload.relativeY ?? products.value[index].relativeY
+    }
+  }
+
   // Add methods for adding/updating items here
   // ...
 
@@ -200,6 +219,7 @@ export default function usePlanogramStore() {
     initializeTestData,
     updateShelfPosition,
     finalizeShelfPosition,
-    addProduct
+    addProduct,
+    updateProductPosition
   }
 } 
