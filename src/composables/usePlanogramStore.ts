@@ -70,7 +70,7 @@ export default function usePlanogramStore() {
 
     // Test Product on Shelf
     products.value.push({
-      id: 'product1',
+      id: 'product1OnShelfe',
       x: 100,
       y: 100,
       relativeX: 0,
@@ -85,7 +85,7 @@ export default function usePlanogramStore() {
 
     // Standalone Product
     products.value.push({
-      id: 'product2',
+      id: 'product2Standalone',
       x: 400,
       y: 200,
       width: 50,
