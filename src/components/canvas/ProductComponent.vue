@@ -192,10 +192,8 @@ export default defineComponent({
 
       const getProductPositionData = (product: Node) => {
         const productPos = product.getAbsolutePosition()
-        console.log('productPos', productPos)
         const yOffsetProductOnTopOfProduct = 3;
         const relativeY = product.getAttr('y') - props.product.height - yOffsetProductOnTopOfProduct;
-        console.log('relativeY', relativeY);
         return {
           relativeX: product.getAttr('x'),
           relativeY: relativeY,
@@ -236,7 +234,6 @@ export default defineComponent({
       // Handle final positioning
       const handlePositioning = () => {
         const productId = node.getAttr('id');
-        //console.log({isProductHaveCollision});
         //if product has collision then revert to original postiion
         if(isProductHaveCollision.value.productId === productId && isProductHaveCollision.value.hasCollision) {
           let collisionProduct = isProductHaveCollision.value.collisionProduct;
