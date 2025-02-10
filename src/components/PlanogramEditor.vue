@@ -4,6 +4,9 @@
       <div class="toolbar">
         <button @click="handleSave">Save</button>
         <button @click="handleLoad">Load</button>
+        <button @click="showProductImages = !showProductImages">
+          {{ showProductImages ? 'Hide' : 'Show' }} Images
+        </button>
       </div>
       <div class="template-section">
         <h3>Fixtures Template</h3>
@@ -37,7 +40,8 @@ import EditorCanvas from './canvas/EditorCanvas.vue'
 import type { DraggedItem, Product, Section, Shelf } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import Konva from 'konva'
-import usePlanogramStore from '../composables/usePlanogramStore'
+import { usePlanogramStore } from '../composables/usePlanogramStore'
+import { storeToRefs } from 'pinia'
 
 export default defineComponent({
   name: 'PlanogramEditor',
@@ -51,7 +55,9 @@ export default defineComponent({
     const draggedItem = ref<DraggedItem | null>(null)
     const stageRef = ref<Konva.Stage | null>(null)
     const nodes = ref<any[]>([])
-    const { addProduct, sections, shelves, products, standaloneProducts, initializeTestData } = usePlanogramStore()
+    const store = usePlanogramStore()
+    const { addProduct, initializeTestData } = store
+    const { sections, shelves, products, standaloneProducts, showProductImages } = storeToRefs(store)
     const editorCanvasRef = ref<InstanceType<typeof EditorCanvas> | null>(null)
     const canvasKey = ref(0)
 
@@ -171,7 +177,7 @@ export default defineComponent({
 
             // Update shelves with proper positioning
             const newShelves = jsonData.shelves.map((shelf: Shelf) => {
-              const parentSection = sections.value.find(s => s.id === shelf.sectionId)
+              const parentSection = sections.value.find((s: Section) => s.id === shelf.sectionId)
               return {
                 ...shelf,
                 x: parentSection ? parentSection.x + (shelf.relativeX || 0) : shelf.x || 0,
@@ -182,8 +188,8 @@ export default defineComponent({
 
             // Update products with proper positioning
             const newProducts = jsonData.products.map((product: Product) => {
-              const parentShelf = shelves.value.find(s => s.id === product.shelfId)
-              const parentSection = sections.value.find(s => s.id === product.sectionId)
+              const parentShelf = shelves.value.find((s: Shelf) => s.id === product.shelfId)
+              const parentSection = sections.value.find((s: Section) => s.id === product.sectionId)
               return {
                 ...product,
                 x: parentShelf ? parentShelf.x + (product.relativeX || 0) : 
@@ -223,7 +229,8 @@ export default defineComponent({
       handleSave,
       handleLoad,
       editorCanvasRef,
-      canvasKey
+      canvasKey,
+      showProductImages
     }
   }
 })
@@ -250,6 +257,7 @@ export default defineComponent({
   margin-bottom: 20px;
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .toolbar button {
@@ -261,6 +269,7 @@ export default defineComponent({
   cursor: pointer;
   font-size: 14px;
   flex: 1;
+  min-width: 100px;
 }
 
 .toolbar button:hover {

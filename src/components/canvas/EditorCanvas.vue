@@ -43,21 +43,20 @@
       />
     </v-layer>
   </v-stage>
-
-
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import usePlanogramStore from '../../composables/usePlanogramStore'
+import { usePlanogramStore } from '../../composables/usePlanogramStore'
 import useDragAndDrop from '../../composables/useDragAndDrop'
 import ShelfComponent from '../../components/canvas/ShelfComponent.vue'
 import ProductComponent from '../../components/canvas/ProductComponent.vue'
 import { v4 as uuidv4 } from 'uuid'
 import { useDebugStore } from '../../composables/useDebugStore'
-import type { Section,DraggedItem } from '../../types'
+import type { Section, DraggedItem, Shelf } from '../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { useSelectionStore } from '../../composables/useSelectionStore'
+import { storeToRefs } from 'pinia'
 
 export default defineComponent({
   name: 'EditorCanvas',
@@ -68,18 +67,9 @@ export default defineComponent({
     ProductComponent,
   },
   setup(props, { emit }) {
-    const {
-      sections,
-      shelves,
-      products,
-      standaloneProducts,
-      getShelvesBySection,
-      getProductsBySection,
-      getProductsByShelf,
-      initializeTestData,
-      addProduct,
-      updateProductPosition
-    } = usePlanogramStore()
+    const store = usePlanogramStore()
+    const { sections, shelves, products, standaloneProducts } = storeToRefs(store)
+    const { getShelvesBySection, getProductsBySection, getProductsByShelf, initializeTestData, addProduct, updateProductPosition } = store
 
     const { stageRef, findSectionAtPosition } = useDragAndDrop()
     const debugStore = useDebugStore()
@@ -115,9 +105,6 @@ export default defineComponent({
       debugStore.updateCoordinates(pos)
     }
 
-    // Add remaining logic and event handlers here
-    // ...
-
     const sectionConfig = (section: Section) => ({
       id: section.id,
       x: section.x,
@@ -127,7 +114,7 @@ export default defineComponent({
       subCategory: 'section'
     })
 
-    const sectionRectConfig = (section: any) => ({
+    const sectionRectConfig = (section: Section) => ({
       width: section.width,
       height: section.height,
       fill: '#BBDEFB',
@@ -174,14 +161,14 @@ export default defineComponent({
         relativeY: number
       }>
     }) => {
-      const shelf = shelves.value.find(s => s.id === payload.id)
+      const shelf = shelves.value.find((s: Shelf) => s.id === payload.id)
       if (!shelf || !stageRef.value) return
       
       const group = stageRef.value.getStage().findOne(`#${payload.id}`)
       if (!group) return
       // Update shelf position
       if (shelf.sectionId) {
-        const section = sections.value.find(s => s.id === shelf.sectionId)
+        const section = sections.value.find((s: Section) => s.id === shelf.sectionId)
         if (section) {
           shelf.relativeX = payload.x - section.x
           shelf.relativeY = payload.y - section.y
@@ -190,16 +177,6 @@ export default defineComponent({
         shelf.x = payload.x
         shelf.y = payload.y
       }
-
-      // // Products move automatically with the group due to Konva's grouping
-      // // Just update their relative positions in the store
-      // payload.products.forEach(p => {
-      //   const product = products.value.find(prod => prod.id === p.id)
-      //   if (product) {
-      //     product.relativeX = p.relativeX
-      //     product.relativeY = p.relativeY
-      //   }
-      // })
     }
 
     const handleDragOver = (e: KonvaEventObject<DragEvent>) => {
@@ -248,7 +225,7 @@ export default defineComponent({
         stageRef.value.getStage().container().style.cursor = 'default'
       }
     }
-    // Handle product detachment
+
     const handleProductDetach = ({ productId, absoluteX, absoluteY }: { 
       productId: string;
       absoluteX: number;
@@ -257,7 +234,6 @@ export default defineComponent({
       convertToStandaloneProduct(productId, absoluteX, absoluteY)
     }
 
-    // Handle product re-parenting
     const convertToStandaloneProduct = (productId: string, x: number, y: number) => {
       const product = products.value.find(p => p.id === productId)
       if (product) {

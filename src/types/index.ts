@@ -37,6 +37,8 @@ export interface Product {
   relativeY: number;
   type?: string|'Product';
   color?: string;
+  image?: string;
+  category?: string;
 }
 
 export interface DraggedItem {
@@ -49,4 +51,4 @@ export interface DraggedItem {
     x: number;
     y: number;
   };
-} 
+}

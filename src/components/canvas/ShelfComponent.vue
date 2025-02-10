@@ -33,8 +33,8 @@ import { defineComponent, type PropType } from 'vue'
 import type { Shelf, Product } from '../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import ProductComponent from './ProductComponent.vue'
-import usePlanogramStore from '../../composables/usePlanogramStore'
 import { useDebugStore } from '../../composables/useDebugStore'
+import { usePlanogramStore } from '../../composables/usePlanogramStore'
 
 export default defineComponent({
   name: 'ShelfComponent',
