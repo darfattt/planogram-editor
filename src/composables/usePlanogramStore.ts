@@ -191,7 +191,10 @@ export default function usePlanogramStore() {
     y: number
     relativeX?: number
     relativeY?: number
+    shelfId?: string
+    sectionId?: string,
   }) => {
+    console.log(payload);
     const index = products.value.findIndex(p => p.id === payload.id)
     if (index === -1) return
     
@@ -200,7 +203,9 @@ export default function usePlanogramStore() {
       x: payload.x,
       y: payload.y,
       relativeX: payload.relativeX ?? products.value[index].relativeX,
-      relativeY: payload.relativeY ?? products.value[index].relativeY
+      relativeY: payload.relativeY ?? products.value[index].relativeY,
+      shelfId: payload.shelfId,
+      sectionId: payload.sectionId,
     }
   }
 
