@@ -95,7 +95,7 @@ export default defineComponent({
     }
 
     // Initialize test data on component mount
-    initializeTestData()
+    //initializeTestData()
 
     // Add cache map at the top of setup
     const shelfPositionCache = new Map<string, { x: number; y: number }>()
