@@ -112,23 +112,23 @@ export default defineComponent({
         const hasCollision = !(isRightOf || isLeftOf || isBelow || isAbove) && 
                             product.getAttr('id') !== node.getAttr('id');
 
-        console.debug('Collision check:', {
-          targetId: node.getAttr('id'),
-          productId: product.getAttr('id'),
-          targetX: targetRect.x,
-          productRight: productRect.x + productRect.width,
-          isRightOf,
-          targetRight: targetRect.x + targetRect.width,
-          productX: productRect.x,
-          isLeftOf,
-          targetY: targetRect.y,
-          productBottom: productRect.y + productRect.height,
-          isBelow,
-          targetBottom: targetRect.y + targetRect.height,
-          productY: productRect.y,
-          isAbove,
-          hasCollision
-        });
+        // console.debug('Collision check:', {
+        //   targetId: node.getAttr('id'),
+        //   productId: product.getAttr('id'),
+        //   targetX: targetRect.x,
+        //   productRight: productRect.x + productRect.width,
+        //   isRightOf,
+        //   targetRight: targetRect.x + targetRect.width,
+        //   productX: productRect.x,
+        //   isLeftOf,
+        //   targetY: targetRect.y,
+        //   productBottom: productRect.y + productRect.height,
+        //   isBelow,
+        //   targetBottom: targetRect.y + targetRect.height,
+        //   productY: productRect.y,
+        //   isAbove,
+        //   hasCollision
+        // });
 
         // Update color based on collision
         if(hasCollision){
