@@ -203,7 +203,6 @@ export const usePlanogramStore = defineStore('planogram', () => {
     shelfId?: string
     sectionId?: string,
   }) => {
-    console.log(payload);
     const index = products.value.findIndex(p => p.id === payload.id)
     if (index === -1) return
     

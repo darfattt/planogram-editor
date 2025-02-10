@@ -56,8 +56,8 @@ export default defineComponent({
     const stageRef = ref<Konva.Stage | null>(null)
     const nodes = ref<any[]>([])
     const store = usePlanogramStore()
-    const { addProduct, initializeTestData } = store
-    const { sections, shelves, products, standaloneProducts, showProductImages } = storeToRefs(store)
+    const { addProduct } = store
+    const { sections, shelves, products, showProductImages } = storeToRefs(store)
     const editorCanvasRef = ref<InstanceType<typeof EditorCanvas> | null>(null)
     const canvasKey = ref(0)
 
