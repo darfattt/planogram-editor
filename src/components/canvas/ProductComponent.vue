@@ -30,6 +30,7 @@ import type { Node } from 'konva/lib/Node'
 import { useDebugStore } from '../../composables/useDebugStore'
 import { useSelectionStore } from '../../composables/useSelectionStore'
 import type { Rect } from 'konva/lib/shapes/Rect'
+import usePlanogramStore from '../../composables/usePlanogramStore'
 
 export default defineComponent({
   name: 'ProductComponent',
@@ -59,17 +60,26 @@ export default defineComponent({
       selectionStore.selectedIds.value.includes(props.product.id)
     )
 
+    const selectedStyles = {
+      stroke: '#2196F3',
+      strokeWidth: 2,
+      shadowColor: '#2196F3',
+      shadowBlur: 10,
+      shadowOpacity: 0.3,
+      shadowOffset: { x: 2, y: 2 }
+    }
+
     const productConfig = computed(() => ({
       id: props.product.id, 
       width: props.product.width,
       height: props.product.height,
       fill: defaultFillColor,
-      stroke: isSelected.value ? '#2196F3' : '#66bb6a',
-      strokeWidth: isSelected.value ? 2 : 1,
-      shadowColor: isSelected.value ? '#2196F3' : undefined,
-      shadowBlur: isSelected.value ? 10 : 0,
-      shadowOpacity: isSelected.value ? 0.3 : 0,
-      shadowOffset: { x: 2, y: 2 },
+      ...(isSelected.value ? selectedStyles : {
+        stroke: '#66bb6a',
+        strokeWidth: 1,
+        shadowBlur: 0,
+        shadowOpacity: 0
+      }),
       category: props.category,
       type: props.type
     }))
@@ -81,6 +91,7 @@ export default defineComponent({
       hasCollision: false,
       collisionProduct: null as Node<NodeConfig> | null
     })
+
     const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
       const node = e.target
       const pos = node.getAbsolutePosition()
@@ -276,14 +287,16 @@ export default defineComponent({
         if (targetProduct) {
           console.log('targetProduct', targetProduct)
           const { relativeX, relativeY, parentGroup, productAttrs } = getProductPositionData(targetProduct)
+          console.log({parentGroup})
+          console.log({productAttrs})
           node.moveTo(parentGroup).position({ x: relativeX, y: relativeY })
           return {
             x: absolutePos.x,
             y: absolutePos.y,
             relativeX,
             relativeY,
-            shelfId: productAttrs.shelfId,
-            sectionId: productAttrs.sectionId,
+            shelfId: parentGroup?.getAttr('id'),
+            sectionId: parentGroup?.getAttr('shelfData').sectionId,
             parentProductId: targetProduct.id()
           }
         }
@@ -301,13 +314,25 @@ export default defineComponent({
 
       const positionData = handlePositioning()
       
+      // Update store with new position
+      const { updateProductPosition } = usePlanogramStore()
+      updateProductPosition({
+        id: props.product.id,
+        x: positionData.x,
+        y: positionData.y,
+        relativeX: positionData.relativeX,
+        relativeY: positionData.relativeY,
+        shelfId: positionData.shelfId,
+        sectionId: positionData.sectionId,
+      })
+
+      // Existing emit calls
       emit('dragend', {
         id: props.product.id,
         parentProductId: null,
         ...positionData
       })
       
-      // Emit the position update
       emit('update-position', {
         id: props.product.id,
         x: positionData.x,
@@ -337,12 +362,14 @@ export default defineComponent({
     }
 
     const handleClick = (e: KonvaEventObject<MouseEvent>) => {
+      console.log('handle click product ',props.product.id);
       const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey
       if (!metaPressed) {
         selectionStore.selectOne(props.product.id)
       } else {
         selectionStore.toggleSelection(props.product.id)
       }
+      selectionStore.selectedIds.value = [...selectionStore.selectedIds.value]
     }
 
     return {
