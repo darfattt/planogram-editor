@@ -1,9 +1,17 @@
 <template>
   <div class="product-template">
     <div class="template-header">
-      <h3>Product Template</h3>
-      <button class="add-button" @click.stop.prevent="addProductToCanvas">+ Add New</button>
+      
     </div>
+    <div class="template-item">
+        <button class="add-button" @click.stop.prevent="addProductToCanvas(50, 50)">+ Add New (50x50)</button>
+    </div>
+      <div class="template-item">
+        <button class="add-button" @click.stop.prevent="addProductToCanvas(50, 100)">+ Add New (50x100)</button>
+      </div>
+      <div class="template-item">
+        <button class="add-button" @click.stop.prevent="addProductToCanvas(100, 100)">+ Add New (100x100)</button>
+      </div>
     <div
       class="template-item"
       draggable="true"
@@ -38,12 +46,12 @@ export default defineComponent({
       }
     }
 
-    const addProductToCanvas = () => {
+    const addProductToCanvas = (width: number,height: number) => {
       const item: DraggedItem = {
         type: 'product',
         properties: {
-          width: 50,
-          height: 50,
+          width: width,
+          height: height,
         }
       }
       // Emit single product

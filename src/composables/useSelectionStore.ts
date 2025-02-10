@@ -1,14 +1,18 @@
 import { ref } from 'vue'
-import usePlanogramStore from './usePlanogramStore'
+import { usePlanogramStore } from './usePlanogramStore'
+import { storeToRefs } from 'pinia'
+import type { Product } from '../types'
 
 const selectedIds = ref<string[]>([])
 let isListenerAdded = false
 
 export function useSelectionStore() {
-  const { products, addProduct } = usePlanogramStore()
+  const store = usePlanogramStore()
+  const { products } = storeToRefs(store)
+  const { addProduct } = store
   
   const duplicateProductToRight = (productId: string) => {
-    const sourceProduct = products.value.find(p => p.id === productId)
+    const sourceProduct = products.value.find((p: Product) => p.id === productId)
     if (!sourceProduct) return
     console.log('sourceProduct', sourceProduct);
     // Create new product with position offset
@@ -17,8 +21,8 @@ export function useSelectionStore() {
       id: crypto.randomUUID(),
       x: sourceProduct.x + sourceProduct.width + 5, // 5px gap
       y: sourceProduct.y,
-      relativeX: sourceProduct.relativeX + sourceProduct.width + 5,
-      relativeY: sourceProduct.relativeY
+      relativeX: (sourceProduct.relativeX ?? 0) + sourceProduct.width + 5,
+      relativeY: sourceProduct.relativeY ?? 0
     }
     
     // Add to store
@@ -29,7 +33,7 @@ export function useSelectionStore() {
   }
 
   const duplicateProductToLeft = (productId: string) => {
-    const sourceProduct = products.value.find(p => p.id === productId)
+    const sourceProduct = products.value.find((p: Product) => p.id === productId)
     if (!sourceProduct) return
     
     const newProduct = {
@@ -37,8 +41,8 @@ export function useSelectionStore() {
       id: crypto.randomUUID(),
       x: sourceProduct.x - sourceProduct.width - 5,
       y: sourceProduct.y,
-      relativeX: sourceProduct.relativeX - sourceProduct.width - 5,
-      relativeY: sourceProduct.relativeY
+      relativeX: (sourceProduct.relativeX ?? 0) - sourceProduct.width - 5,
+      relativeY: sourceProduct.relativeY ?? 0
     }
     
     products.value.push(newProduct)
@@ -46,7 +50,7 @@ export function useSelectionStore() {
   }
 
   const duplicateProductToUp = (productId: string) => {
-    const sourceProduct = products.value.find(p => p.id === productId)
+    const sourceProduct = products.value.find((p: Product) => p.id === productId)
     if (!sourceProduct) return
     
     const newProduct = {
@@ -54,8 +58,8 @@ export function useSelectionStore() {
       id: crypto.randomUUID(),
       x: sourceProduct.x,
       y: sourceProduct.y - sourceProduct.height - 5,
-      relativeX: sourceProduct.relativeX,
-      relativeY: sourceProduct.relativeY - sourceProduct.height - 5
+      relativeX: sourceProduct.relativeX ?? 0,
+      relativeY: (sourceProduct.relativeY ?? 0) - sourceProduct.height - 5
     }
     
     products.value.push(newProduct)

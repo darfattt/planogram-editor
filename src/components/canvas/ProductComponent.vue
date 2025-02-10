@@ -17,12 +17,19 @@
     @mouseleave="handleMouseLeave"
     @click="handleClick"
   >
-    <v-rect :config="productConfig" />
+    <v-rect :config="productConfig" v-if="!product.image || !showProductImages" />
+    <v-image 
+      v-else
+      :config="{
+        ...productConfig,
+        image: imageObj,
+      }"
+    />
   </v-group>
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, type PropType, ref } from 'vue'
+import { defineComponent, computed, type PropType, ref, onMounted } from 'vue'
 import type { Product } from '../../types'
 import type { KonvaEventObject, NodeConfig } from 'konva/lib/Node'
 import type { Group } from 'konva/lib/Group'
@@ -30,7 +37,8 @@ import type { Node } from 'konva/lib/Node'
 import { useDebugStore } from '../../composables/useDebugStore'
 import { useSelectionStore } from '../../composables/useSelectionStore'
 import type { Rect } from 'konva/lib/shapes/Rect'
-import usePlanogramStore from '../../composables/usePlanogramStore'
+import { usePlanogramStore } from '../../composables/usePlanogramStore'
+import { storeToRefs } from 'pinia'
 
 export default defineComponent({
   name: 'ProductComponent',
@@ -56,6 +64,20 @@ export default defineComponent({
   setup(props, { emit }) {
     const defaultFillColor = '#81C784';
     const selectionStore = useSelectionStore()
+    const store = usePlanogramStore()
+    const { showProductImages } = storeToRefs(store)
+    const imageObj = ref<HTMLImageElement | null>(null)
+
+    onMounted(() => {
+      if (props.product.image) {
+        const img = new Image()
+        img.src = props.product.image
+        img.onload = () => {
+          imageObj.value = img
+        }
+      }
+    })
+
     const isSelected = computed(() => 
       selectionStore.selectedIds.value.includes(props.product.id)
     )
@@ -122,24 +144,6 @@ export default defineComponent({
         
         const hasCollision = !(isRightOf || isLeftOf || isBelow || isAbove) && 
                             product.getAttr('id') !== node.getAttr('id');
-
-        // console.debug('Collision check:', {
-        //   targetId: node.getAttr('id'),
-        //   productId: product.getAttr('id'),
-        //   targetX: targetRect.x,
-        //   productRight: productRect.x + productRect.width,
-        //   isRightOf,
-        //   targetRight: targetRect.x + targetRect.width,
-        //   productX: productRect.x,
-        //   isLeftOf,
-        //   targetY: targetRect.y,
-        //   productBottom: productRect.y + productRect.height,
-        //   isBelow,
-        //   targetBottom: targetRect.y + targetRect.height,
-        //   productY: productRect.y,
-        //   isAbove,
-        //   hasCollision
-        // });
 
         // Update color based on collision
         if(hasCollision){
@@ -257,15 +261,6 @@ export default defineComponent({
             hasCollision: false,
             collisionProduct: null as Node<NodeConfig> | null
           }
-
-          //back to original position
-          // node.position(originalPosition.value)
-         
-          // return {
-          //   ...originalPosition.value,
-          //   relativeX: originalPosition.value.x,
-          //   relativeY: originalPosition.value.y
-          // }
         }
         if (targetShelf) {
           console.log({targetShelf});
@@ -277,11 +272,12 @@ export default defineComponent({
           node.zIndex(shelfChildren.length)
           return {
             x: absolutePos.x,
-            y: absolutePos.y - props.product.height,
+            y: absolutePos.y,
             relativeX,
             relativeY,
             shelfId: shelfData.id,
-            sectionId: shelfData.sectionId
+            sectionId: shelfData.sectionId,
+            foundShelf: true
           }
         }
         if (targetProduct) {
@@ -297,35 +293,36 @@ export default defineComponent({
             relativeY,
             shelfId: parentGroup?.getAttr('id'),
             sectionId: parentGroup?.getAttr('shelfData').sectionId,
-            parentProductId: targetProduct.id()
+            parentProductId: targetProduct.id(),
+            foundProduct: true
           }
         }
-
         //back to original position
         node.position(originalPosition.value)
         return {
           ...originalPosition.value,
           relativeX: originalPosition.value.x,
-          relativeY: originalPosition.value.y
+          relativeY: originalPosition.value.y,
+          foundProduct: false,
+          foundShelf: false
         }
       }
 
-     
-
       const positionData = handlePositioning()
-      
-      // Update store with new position
-      const { updateProductPosition } = usePlanogramStore()
-      updateProductPosition({
-        id: props.product.id,
-        x: positionData.x,
-        y: positionData.y,
-        relativeX: positionData.relativeX,
-        relativeY: positionData.relativeY,
-        shelfId: positionData.shelfId,
-        sectionId: positionData.sectionId,
-      })
-
+      console.log(positionData);
+      if(positionData.foundProduct || positionData.foundShelf){
+        // Update store with new position
+        const { updateProductPosition } = usePlanogramStore()
+        updateProductPosition({
+          id: props.product.id,
+          x: positionData.x,
+          y: positionData.y,
+          relativeX: positionData.relativeX,
+          relativeY: positionData.relativeY,
+          shelfId: positionData.shelfId,
+          sectionId: positionData.sectionId,
+        })
+      }
       // Existing emit calls
       emit('dragend', {
         id: props.product.id,
@@ -333,13 +330,13 @@ export default defineComponent({
         ...positionData
       })
       
-      emit('update-position', {
-        id: props.product.id,
-        x: positionData.x,
-        y: positionData.y,
-        relativeX: positionData.relativeX,
-        relativeY: positionData.relativeY
-      })
+      // emit('update-position', {
+      //   id: props.product.id,
+      //   x: positionData.x,
+      //   y: positionData.y,
+      //   relativeX: positionData.relativeX,
+      //   relativeY: positionData.relativeY
+      // })
     }
 
     const handleMouseEnter = (e: any) => {
@@ -380,8 +377,10 @@ export default defineComponent({
       handleMouseLeave,
       originalPosition,
       handleDragStart,
-      handleClick
+      handleClick,
+      showProductImages,
+      imageObj
     }
   }
 })
-</script> 
+</script>
