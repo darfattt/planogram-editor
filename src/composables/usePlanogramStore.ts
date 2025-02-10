@@ -84,24 +84,24 @@ export default function usePlanogramStore() {
     })
 
     // Standalone Product
-    // products.value.push({
-    //   id: 'product2Standalone',
-    //   x: 400,
-    //   y: 200,
-    //   width: 50,
-    //   height: 50,
-    //   category: 'product',
-    //   type: 'Drink'
-    // })
-    // products.value.push({
-    //   id: 'product3',
-    //   x: 300,
-    //   y: 200,
-    //   width: 50,
-    //   height: 50,
-    //   category: 'product',
-    //   type: 'Medicine'
-    // })
+    products.value.push({
+      id: 'product2Standalone',
+      x: 400,
+      y: 200,
+      width: 50,
+      height: 50,
+      category: 'product',
+      type: 'Drink'
+    })
+    products.value.push({
+      id: 'product3',
+      x: 300,
+      y: 200,
+      width: 50,
+      height: 50,
+      category: 'product',
+      type: 'Medicine'
+    })
   }
 
   const updateShelfPosition = (payload: {
