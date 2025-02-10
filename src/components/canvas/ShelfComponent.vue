@@ -15,6 +15,7 @@
     @dragend="handleDragEnd"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
+    @update-position="$emit('update-position', $event)"
   >
     <v-rect :config="shelfConfig" />
     <ProductComponent
@@ -22,6 +23,7 @@
       :key="product.id"
       :product="product"
       :relativeTo="true"
+      @update-position="$emit('update-position', $event)"
     />
   </v-group>
 </template>
@@ -49,7 +51,7 @@ export default defineComponent({
       required: true
     }
   },
-  emits: ['product-drag', 'product-detach'],
+  emits: ['product-drag', 'product-detach', 'update-position'],
   setup(props, { emit }) {
     const { updateShelfPosition, finalizeShelfPosition } = usePlanogramStore()
     const debugStore = useDebugStore()

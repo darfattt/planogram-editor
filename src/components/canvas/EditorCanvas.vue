@@ -7,6 +7,7 @@
     @dragover="handleDragOver"
     @drop="handleDrop"
     @pointermove="handleMouseMove"
+    @click="handleStageClick"
     v-bind="$attrs"
   >
     <v-layer>
@@ -18,6 +19,7 @@
         @dragmove="updateSectionPosition(section.id)"
         @mouseenter="handleSectionHover"
         @mouseleave="handleSectionHoverEnd"
+        @click="handleSectionClick"
       >
         <v-rect :config="sectionRectConfig(section)" />
         
@@ -27,7 +29,8 @@
           :key="shelf.id"
           :shelf="shelf"
           :products="getProductsByShelf(shelf.id)"
-          @update="updateShelfPosition"
+          @click="handleShelfClick"
+          @update-position="handleProductPositionUpdate"
         >
         </ShelfComponent>
         </v-group>
@@ -54,6 +57,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { useDebugStore } from '../../composables/useDebugStore'
 import type { Section,DraggedItem } from '../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
+import { useSelectionStore } from '../../composables/useSelectionStore'
 
 export default defineComponent({
   name: 'EditorCanvas',
@@ -73,11 +77,13 @@ export default defineComponent({
       getProductsBySection,
       getProductsByShelf,
       initializeTestData,
-      addProduct
+      addProduct,
+      updateProductPosition
     } = usePlanogramStore()
 
     const { stageRef, findSectionAtPosition } = useDragAndDrop()
     const debugStore = useDebugStore()
+    const selectionStore = useSelectionStore()
 
     const stageConfig = {
       width: window.innerWidth - 250,
@@ -148,91 +154,14 @@ export default defineComponent({
       section.y = newY
     }
 
-    const updateProductPosition = (productId: string) => {
-      const product = products.value.find(p => p.id === productId)
-      if (!product || !stageRef.value) return
-      
-      const group = stageRef.value.getStage().findOne(`#${productId}`)
-      if (!group) return
-
-      const pos = group.getAbsolutePosition()
-      let absoluteX = pos.x
-      let absoluteY = pos.y
-
-      // Update cache for shelf positions
-      shelves.value.forEach((s: {
-        id: string;
-        sectionId?: string | null;
-        relativeX?: number;
-        relativeY?: number;
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-      }) => {
-        if (!shelfPositionCache.has(s.id)) {
-          const shelfAbsX = s.sectionId 
-            ? sections.value.find((sec: Section) => sec.id === s.sectionId)?.x! + s.relativeX!
-            : s.x
-          const shelfAbsY = s.sectionId 
-            ? sections.value.find((sec: Section) => sec.id === s.sectionId)?.y! + s.relativeY!
-            : s.y
-          shelfPositionCache.set(s.id, { x: shelfAbsX, y: shelfAbsY })
-        }
-      })
-
-      // Find target shelf using cached positions
-      const targetShelf = shelves.value.find(s => {
-        const { x: shelfAbsX, y: shelfAbsY } = shelfPositionCache.get(s.id)!
-        return (
-          absoluteX >= shelfAbsX &&
-          absoluteX <= shelfAbsX + s.width &&
-          absoluteY >= shelfAbsY - 20 &&
-          absoluteY <= shelfAbsY + s.height + 20
-        )
-      })
-
-      if (targetShelf) {
-        const { x: shelfAbsX, y: shelfAbsY } = shelfPositionCache.get(targetShelf.id)!
-        
-        // Snap to shelf surface (top edge)
-        absoluteY = shelfAbsY - product.height  // Position product on top of shelf
-        
-        // Clamp X position within shelf width
-        absoluteX = Math.max(
-          shelfAbsX,
-          Math.min(absoluteX, shelfAbsX + targetShelf.width - product.width)
-        )
-        
-        // Only update if position changed
-        if (product.x !== absoluteX || product.y !== absoluteY) {
-          product.x = absoluteX
-          product.y = absoluteY
-          product.shelfId = targetShelf.id
-          product.sectionId = targetShelf.sectionId
-          
-          if (product.sectionId) {
-            const section = sections.value.find((sec: Section) => sec.id === product.sectionId)!
-            product.relativeX = absoluteX - section.x
-            product.relativeY = absoluteY - section.y
-          }
-        }
-      } else {
-        console.log('No valid shelf - reverting position')
-        // Revert to original position
-        absoluteX = product.x
-        absoluteY = product.y
-      }
-
-      // Always update position (either snapped or reverted)
-      product.x = absoluteX
-      product.y = absoluteY
-      product.shelfId = targetShelf?.id || null
-      product.sectionId = targetShelf?.sectionId || null
-
-      // Force Konva position update
-      group.x(absoluteX)
-      group.y(absoluteY)
+    const handleProductPositionUpdate = (payload: {
+      id: string
+      x: number
+      y: number
+      relativeX?: number
+      relativeY?: number
+    }) => {
+      updateProductPosition(payload)
     }
 
     const updateShelfPosition = (payload: {
@@ -338,6 +267,23 @@ export default defineComponent({
       }
     }
 
+    const handleStageClick = (e: KonvaEventObject<MouseEvent>) => {
+      // Clear selection when clicking empty canvas
+      if (e.target === e.target.getStage()) {
+        selectionStore.clearSelection()
+      }
+    }
+
+    const handleSectionClick = (e: KonvaEventObject<MouseEvent>) => {
+      e.cancelBubble = true // Stop event from reaching stage
+      selectionStore.clearSelection()
+    }
+
+    const handleShelfClick = (e: KonvaEventObject<MouseEvent>) => {
+      e.cancelBubble = true // Stop event from reaching section/stage
+      selectionStore.clearSelection()
+    }
+
     return {
       stageRef,
       stageConfig,
@@ -358,7 +304,11 @@ export default defineComponent({
       handleMouseMove,
       handleSectionHover,
       handleSectionHoverEnd,
-      handleProductDetach
+      handleProductDetach,
+      handleStageClick,
+      handleSectionClick,
+      handleShelfClick,
+      handleProductPositionUpdate
     }
   }
 })
