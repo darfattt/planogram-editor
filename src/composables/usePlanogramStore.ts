@@ -1,13 +1,14 @@
+import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 import type { Section, Shelf, Product } from '../types'
 
-// Shared state outside the function
-const sections = ref<Section[]>([])
-const shelves = ref<Shelf[]>([])
-const products = ref<Product[]>([])
+export const usePlanogramStore = defineStore('planogram', () => {
+  const sections = ref<Section[]>([])
+  const shelves = ref<Shelf[]>([])
+  const products = ref<Product[]>([])
+  const showProductImages = ref(true)
 
-export default function usePlanogramStore() {
   // Keep the computed properties inside the function
   const standaloneProducts = computed(() => 
     products.value.filter(p => !p.sectionId && !p.shelfId)
@@ -54,7 +55,7 @@ export default function usePlanogramStore() {
       subCategory: 'shelf'
     }
     const testShelf2 = {
-      id: "shelf2", //uuidv4(),
+      id: "shelf2",
       x: 500,
       y: 550,
       relativeX: 10,
@@ -80,7 +81,8 @@ export default function usePlanogramStore() {
       sectionId: testSection.id,
       shelfId: testShelf.id,
       category: 'product',
-      type: 'Food'
+      type: 'Food',
+      image: '/src/assets/products/pepsi.png'
     })
 
     // Standalone Product
@@ -91,7 +93,8 @@ export default function usePlanogramStore() {
       width: 50,
       height: 50,
       category: 'product',
-      type: 'Drink'
+      type: 'Drink',
+      image: '/src/assets/products/cola.png'
     })
     products.value.push({
       id: 'product3',
@@ -100,7 +103,8 @@ export default function usePlanogramStore() {
       width: 50,
       height: 50,
       category: 'product',
-      type: 'Medicine'
+      type: 'Medicine',
+      image: '/src/assets/products/golda.png'
     })
   }
 
@@ -156,29 +160,34 @@ export default function usePlanogramStore() {
   }
 
   const addProduct = (payload: {
-    x: number  // Canvas absolute X (matches node.x() when standalone)
-    y: number  // Canvas absolute Y (matches node.y() when standalone)
+    x: number
+    y: number
     width: number
     height: number
     color?: string
     shelfId?: string
     sectionId?: string
-    relativeX?: number  // X relative to parent shelf (if in shelf)
-    relativeY?: number  // Y relative to parent shelf (if in shelf)
+    relativeX?: number
+    relativeY?: number
+    type?: string
+    image?: string
   }) => {
     const newProduct: Product = {
       id: uuidv4(),
-      x: payload.shelfId ? payload.relativeX ?? 0 : payload.x,  // If in shelf, use relativeX
-      y: payload.shelfId ? payload.relativeY ?? 0 : payload.y,  // If in shelf, use relativeY
+      x: payload.shelfId ? payload.relativeX ?? 0 : payload.x,
+      y: payload.shelfId ? payload.relativeY ?? 0 : payload.y,
       width: payload.width,
       height: payload.height,
-      relativeX: payload.relativeX ?? (payload.shelfId ? payload.x : 0),  // Store canvas X as relativeX when adding to shelf
+      relativeX: payload.relativeX ?? (payload.shelfId ? payload.x : 0),
       relativeY: payload.relativeY ?? (payload.shelfId ? payload.y : 0),
       shelfId: payload.shelfId,
       sectionId: payload.sectionId,
-      type: 'Food',
+      type: payload.type || 'Food',
       color: payload.color || '#81C784',
       category: 'product',
+      image: payload.type === 'Drink' ? '/src/assets/products/cola.png' : 
+             payload.type === 'Food' ? '/src/assets/products/pepsi.png' : 
+             '/src/assets/products/golda.png',
     }
     products.value.push(newProduct)
     console.log('newProduct', newProduct);
@@ -197,24 +206,27 @@ export default function usePlanogramStore() {
     const index = products.value.findIndex(p => p.id === payload.id)
     if (index === -1) return
     
+    const currentProduct = products.value[index]
     products.value[index] = {
-      ...products.value[index],
+      ...currentProduct,
       x: payload.x,
       y: payload.y,
-      relativeX: payload.relativeX ?? products.value[index].relativeX,
-      relativeY: payload.relativeY ?? products.value[index].relativeY,
+      relativeX: payload.relativeX ?? currentProduct.relativeX,
+      relativeY: payload.relativeY ?? currentProduct.relativeY,
       shelfId: payload.shelfId,
       sectionId: payload.sectionId,
+      type: currentProduct.type,
+      color: currentProduct.color,
+      category: currentProduct.category,
+      image: currentProduct.image
     }
   }
-
-  // Add methods for adding/updating items here
-  // ...
 
   return {
     sections,
     shelves,
     products,
+    showProductImages,
     standaloneProducts,
     standaloneShelves,
     getShelvesBySection,
@@ -226,4 +238,4 @@ export default function usePlanogramStore() {
     addProduct,
     updateProductPosition
   }
-} 
+})

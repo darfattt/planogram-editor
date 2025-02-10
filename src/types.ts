@@ -48,6 +48,7 @@ export interface Product {
   category: string
   type: string
   color?: string
+  image?:string|null
   // Add other product properties as needed
 }
 
