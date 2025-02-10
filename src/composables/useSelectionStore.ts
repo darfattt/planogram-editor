@@ -5,7 +5,7 @@ const selectedIds = ref<string[]>([])
 let isListenerAdded = false
 
 export function useSelectionStore() {
-  const { products, addProduct } = usePlanogramStore()
+  const { products } = usePlanogramStore()
   
   const duplicateProductToRight = (productId: string) => {
     const sourceProduct = products.value.find(p => p.id === productId)
