@@ -277,11 +277,12 @@ export default defineComponent({
           node.zIndex(shelfChildren.length)
           return {
             x: absolutePos.x,
-            y: absolutePos.y - props.product.height,
+            y: absolutePos.y,
             relativeX,
             relativeY,
             shelfId: shelfData.id,
-            sectionId: shelfData.sectionId
+            sectionId: shelfData.sectionId,
+            foundShelf: true
           }
         }
         if (targetProduct) {
@@ -297,35 +298,38 @@ export default defineComponent({
             relativeY,
             shelfId: parentGroup?.getAttr('id'),
             sectionId: parentGroup?.getAttr('shelfData').sectionId,
-            parentProductId: targetProduct.id()
+            parentProductId: targetProduct.id(),
+            foundProduct: true
           }
         }
-
         //back to original position
         node.position(originalPosition.value)
         return {
           ...originalPosition.value,
           relativeX: originalPosition.value.x,
-          relativeY: originalPosition.value.y
+          relativeY: originalPosition.value.y,
+          foundProduct: false,
+          foundShelf: false
         }
       }
 
      
 
       const positionData = handlePositioning()
-      
-      // Update store with new position
-      const { updateProductPosition } = usePlanogramStore()
-      updateProductPosition({
-        id: props.product.id,
-        x: positionData.x,
-        y: positionData.y,
-        relativeX: positionData.relativeX,
-        relativeY: positionData.relativeY,
-        shelfId: positionData.shelfId,
-        sectionId: positionData.sectionId,
-      })
-
+      console.log(positionData);
+      if(positionData.foundProduct || positionData.foundShelf){
+        // Update store with new position
+        const { updateProductPosition } = usePlanogramStore()
+        updateProductPosition({
+          id: props.product.id,
+          x: positionData.x,
+          y: positionData.y,
+          relativeX: positionData.relativeX,
+          relativeY: positionData.relativeY,
+          shelfId: positionData.shelfId,
+          sectionId: positionData.sectionId,
+        })
+      }
       // Existing emit calls
       emit('dragend', {
         id: props.product.id,
@@ -333,13 +337,13 @@ export default defineComponent({
         ...positionData
       })
       
-      emit('update-position', {
-        id: props.product.id,
-        x: positionData.x,
-        y: positionData.y,
-        relativeX: positionData.relativeX,
-        relativeY: positionData.relativeY
-      })
+      // emit('update-position', {
+      //   id: props.product.id,
+      //   x: positionData.x,
+      //   y: positionData.y,
+      //   relativeX: positionData.relativeX,
+      //   relativeY: positionData.relativeY
+      // })
     }
 
     const handleMouseEnter = (e: any) => {

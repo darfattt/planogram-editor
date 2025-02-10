@@ -1,6 +1,8 @@
 <template>
-    <div><h1>standaloneProducts: {{ standaloneProducts.length }}</h1></div>
-    <div><h1>product by shelf: {{ getProductsByShelf('shelf1').length }}</h1></div>
+    <div>Standalone: {{ standaloneProducts.length }}</div>
+    <div>Shelf 1: {{ getProductsByShelf('shelf1').length }}</div>
+    <div>Shelf 2: {{ getProductsByShelf('shelf2').length }}</div>
+
   <v-stage
     ref="stageRef"
     :config="stageConfig"
@@ -81,7 +83,7 @@ export default defineComponent({
       updateProductPosition
     } = usePlanogramStore()
 
-    const { stageRef, findSectionAtPosition } = useDragAndDrop()
+    const { stageRef } = useDragAndDrop()
     const debugStore = useDebugStore()
     const selectionStore = useSelectionStore()
 
@@ -161,6 +163,7 @@ export default defineComponent({
       relativeX?: number
       relativeY?: number
     }) => {
+      console.log('handle Product Position update');
       updateProductPosition(payload)
     }
 
