@@ -359,14 +359,12 @@ export default defineComponent({
     }
 
     const handleClick = (e: KonvaEventObject<MouseEvent>) => {
-      console.log('handle click product ',props.product.id);
       const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey
       if (!metaPressed) {
         selectionStore.selectOne(props.product.id)
       } else {
         selectionStore.toggleSelection(props.product.id)
       }
-      selectionStore.selectedIds.value = [...selectionStore.selectedIds.value]
     }
 
     return {

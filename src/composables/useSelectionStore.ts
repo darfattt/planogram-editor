@@ -1,15 +1,15 @@
 import { ref } from 'vue'
 import { usePlanogramStore } from './usePlanogramStore'
 import { storeToRefs } from 'pinia'
-import type { Product } from '../types'
+import type { Product, Shelf } from '../types'
 
 const selectedIds = ref<string[]>([])
 let isListenerAdded = false
 
 export function useSelectionStore() {
   const store = usePlanogramStore()
-  const { products } = storeToRefs(store)
-  const { addProduct } = store
+  const { products, shelves } = storeToRefs(store)
+  const { addProduct, deleteProduct, deleteShelf } = store
   
   const duplicateProductToRight = (productId: string) => {
     const sourceProduct = products.value.find((p: Product) => p.id === productId)
@@ -84,7 +84,29 @@ export function useSelectionStore() {
   }
 
   const handleKeyDown = (e: KeyboardEvent) => {
+
     if (selectedIds.value.length === 0) return
+
+    // Handle delete key
+    if (e.key === 'Delete') {
+      selectedIds.value.forEach(id => {
+        // Check if it's a product
+        const product = products.value.find(p => p.id === id)
+        if (product) {
+          deleteProduct(id)
+          return
+        }
+
+        // Check if it's a shelf
+        const shelf = shelves.value.find(s => s.id === id)
+        if (shelf) {
+          deleteShelf(id)
+        }
+      })
+      clearSelection()
+      e.preventDefault()
+      return
+    }
     
     if (e.ctrlKey && e.shiftKey) {
       switch (e.key) {
