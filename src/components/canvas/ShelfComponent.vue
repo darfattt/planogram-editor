@@ -17,7 +17,9 @@
     @mouseleave="handleMouseLeave"
     @update-position="$emit('update-position', $event)"
   >
-    <v-rect :config="shelfConfig" />
+    <v-rect :config="shelfConfig" 
+    @click="handleShelfClick"
+    />
     <ProductComponent
       v-for="product in products"
       :key="product.id"
@@ -35,6 +37,7 @@ import type { KonvaEventObject } from 'konva/lib/Node'
 import ProductComponent from './ProductComponent.vue'
 import { useDebugStore } from '../../composables/useDebugStore'
 import { usePlanogramStore } from '../../composables/usePlanogramStore'
+import { useSelectionStore } from '../../composables/useSelectionStore'
 
 export default defineComponent({
   name: 'ShelfComponent',
@@ -53,7 +56,8 @@ export default defineComponent({
   },
   emits: ['product-drag', 'product-detach', 'update-position'],
   setup(props, { emit }) {
-    const { updateShelfPosition, finalizeShelfPosition } = usePlanogramStore()
+    const selectionStore = useSelectionStore()
+    const { updateShelfPosition } = usePlanogramStore()
     const debugStore = useDebugStore()
     const shelfConfig = {
       width: props.shelf.width,
@@ -128,6 +132,13 @@ export default defineComponent({
       }
     }
 
+    const handleShelfClick = (e: KonvaEventObject<MouseEvent>) => {
+      // Only clear selection if clicking directly on the shelf rectangle itself
+      if (e.target === e.target.getStage()?.findOne('Rect')) {
+        selectionStore.clearSelection()
+      }
+    }
+
     return {
       shelfConfig,
       handleDragMove,
@@ -135,7 +146,8 @@ export default defineComponent({
       handleMouseEnter,
       handleMouseLeave,
       handleProductDrag,
-      handleProductDragStart
+      handleProductDragStart,
+      handleShelfClick
     }
   }
 })

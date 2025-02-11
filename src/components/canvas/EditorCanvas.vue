@@ -31,7 +31,6 @@
           :key="shelf.id"
           :shelf="shelf"
           :products="getProductsByShelf(shelf.id)"
-          @click="handleShelfClick"
           @update-position="handleProductPositionUpdate"
         >
         </ShelfComponent>
@@ -121,7 +120,9 @@ export default defineComponent({
       height: section.height,
       fill: '#BBDEFB',
       stroke: '#2196f3',
-      strokeWidth: 2
+      strokeWidth: 2,
+      category: 'fixtures',
+      subCategory: 'section'
     })
 
     const updateSectionPosition = (sectionId: string) => {
@@ -255,12 +256,16 @@ export default defineComponent({
 
     const handleSectionClick = (e: KonvaEventObject<MouseEvent>) => {
       e.cancelBubble = true // Stop event from reaching stage
-      selectionStore.clearSelection()
+      
+      if (e.target.attrs.category === 'fixtures') {
+        selectionStore.clearSelection()
+      }
     }
 
     const handleShelfClick = (e: KonvaEventObject<MouseEvent>) => {
       e.cancelBubble = true // Stop event from reaching section/stage
-      selectionStore.clearSelection()
+      //selectionStore.clearSelection()
+      //todo select shelf
     }
 
     return {

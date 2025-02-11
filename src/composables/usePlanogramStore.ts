@@ -222,6 +222,24 @@ export const usePlanogramStore = defineStore('planogram', () => {
     }
   }
 
+  const deleteProduct = (productId: string) => {
+    const index = products.value.findIndex(p => p.id === productId)
+    if (index !== -1) {
+      products.value.splice(index, 1)
+    }
+  }
+
+  const deleteShelf = (shelfId: string) => {
+    // First remove all products on this shelf
+    products.value = products.value.filter(p => p.shelfId !== shelfId)
+    
+    // Then remove the shelf
+    const index = shelves.value.findIndex(s => s.id === shelfId)
+    if (index !== -1) {
+      shelves.value.splice(index, 1)
+    }
+  }
+
   return {
     sections,
     shelves,
@@ -236,6 +254,8 @@ export const usePlanogramStore = defineStore('planogram', () => {
     updateShelfPosition,
     finalizeShelfPosition,
     addProduct,
-    updateProductPosition
+    updateProductPosition,
+    deleteProduct,
+    deleteShelf
   }
 })
