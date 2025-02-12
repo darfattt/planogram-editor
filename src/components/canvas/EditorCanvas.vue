@@ -1,8 +1,4 @@
 <template>
-    <div>Standalone: {{ standaloneProducts.length }}</div>
-    <div>Shelf 1: {{ getProductsByShelf('shelf1').length }}</div>
-    <div>Shelf 2: {{ getProductsByShelf('shelf2').length }}</div>
-
   <v-stage
     ref="stageRef"
     :config="stageConfig"
@@ -52,6 +48,11 @@
         </ShelfComponent>
     </v-layer>
   </v-stage>
+  <div>
+    <div>Standalone: {{ standaloneProducts.length }}</div>
+    <div>Shelf 1: {{ getProductsByShelf('shelf1').length }}</div>
+    <div>Shelf 2: {{ getProductsByShelf('shelf2').length }}</div>
+  </div>
 </template>
 
 <script lang="ts">
@@ -86,7 +87,7 @@ export default defineComponent({
 
     const stageConfig = {
       width: window.innerWidth - 250,
-      height: window.innerHeight,
+      height: window.innerHeight -60,
       scale: { x: 1, y: 1 },
       style: {
         border: '2px solid #e0e0e0'

@@ -47,9 +47,9 @@ export default defineComponent({
           height: height,
         }
       }
-      // Emit single product
       emit('add-product', {
         ...item,
+        code: `PROD-${Date.now().toString().slice(-4)}`,
         position: { x: 100, y: 100 }
       })
     }

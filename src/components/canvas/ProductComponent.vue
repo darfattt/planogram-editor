@@ -8,7 +8,8 @@
       category: product.category,
       type: product.type,
       height: product.height,
-      width: product.width
+      width: product.width,
+      code: product.code
     }"
     @dragstart="handleDragStart"
     @dragmove="handleDragMove"
@@ -103,7 +104,8 @@ export default defineComponent({
         shadowOpacity: 0
       }),
       category: props.category,
-      type: props.type
+      type: props.type,
+      code: props.product.code
     }))
 
     const originalPosition = ref({ x: 0, y: 0 })
@@ -207,7 +209,7 @@ export default defineComponent({
 
       const getProductPositionData = (product: Node) => {
         const productPos = product.getAbsolutePosition()
-        const yOffsetProductOnTopOfProduct = 3;
+        const yOffsetProductOnTopOfProduct = selectionStore.productGap;
         const relativeY = product.getAttr('y') - props.product.height - yOffsetProductOnTopOfProduct;
         return {
           relativeX: product.getAttr('x'),
@@ -269,7 +271,7 @@ export default defineComponent({
           node.moveTo(targetShelf)
           targetShelf.add(node)
           node.position({ x: relativeX, y: relativeY })
-          node.zIndex(shelfChildren.length)
+          //node.zIndex(shelfChildren.length)
           return {
             x: absolutePos.x,
             y: absolutePos.y,

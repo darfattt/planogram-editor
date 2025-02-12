@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { usePlanogramStore } from './usePlanogramStore'
 import { storeToRefs } from 'pinia'
-import type { Product, Shelf } from '../types'
+import type { Product } from '../types'
 
 const selectedIds = ref<string[]>([])
 let isListenerAdded = false
@@ -10,18 +10,19 @@ export function useSelectionStore() {
   const store = usePlanogramStore()
   const { products, shelves } = storeToRefs(store)
   const { addProduct, deleteProduct, deleteShelf } = store
+  const productGap = 3; // product gap when product dropped on top other product and also during copied
+
   
   const duplicateProductToRight = (productId: string) => {
     const sourceProduct = products.value.find((p: Product) => p.id === productId)
     if (!sourceProduct) return
-    console.log('sourceProduct', sourceProduct);
     // Create new product with position offset
     const newProduct = {
       ...sourceProduct,
       id: crypto.randomUUID(),
-      x: sourceProduct.x + sourceProduct.width + 5, // 5px gap
+      x: sourceProduct.x + sourceProduct.width + productGap, // productGap
       y: sourceProduct.y,
-      relativeX: (sourceProduct.relativeX ?? 0) + sourceProduct.width + 5,
+      relativeX: (sourceProduct.relativeX ?? 0) + sourceProduct.width + productGap,
       relativeY: sourceProduct.relativeY ?? 0
     }
     
@@ -39,9 +40,9 @@ export function useSelectionStore() {
     const newProduct = {
       ...sourceProduct,
       id: crypto.randomUUID(),
-      x: sourceProduct.x - sourceProduct.width - 5,
+      x: sourceProduct.x - sourceProduct.width - productGap,
       y: sourceProduct.y,
-      relativeX: (sourceProduct.relativeX ?? 0) - sourceProduct.width - 5,
+      relativeX: (sourceProduct.relativeX ?? 0) - sourceProduct.width - productGap,
       relativeY: sourceProduct.relativeY ?? 0
     }
     
@@ -57,9 +58,9 @@ export function useSelectionStore() {
       ...sourceProduct,
       id: crypto.randomUUID(),
       x: sourceProduct.x,
-      y: sourceProduct.y - sourceProduct.height - 5,
+      y: sourceProduct.y - sourceProduct.height - productGap,
       relativeX: sourceProduct.relativeX ?? 0,
-      relativeY: (sourceProduct.relativeY ?? 0) - sourceProduct.height - 5
+      relativeY: (sourceProduct.relativeY ?? 0) - sourceProduct.height - productGap
     }
     
     products.value.push(newProduct)
@@ -142,6 +143,7 @@ export function useSelectionStore() {
     selectedIds,
     selectOne,
     toggleSelection,
-    clearSelection
+    clearSelection,
+    productGap
   }
 }
