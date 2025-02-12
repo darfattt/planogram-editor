@@ -23,8 +23,8 @@ A desktop application for creating and editing retail planograms with 2D visuali
 
 - Drag-and-drop interface for retail components ✅
   - Add Product Template Use Button ✅
-  - Add Fixture Template Use Button
-  - Add Product or Fixture use Drag and Drop 
+  - Add Fixture Template Use Button ✅
+  - ~Add Product or Fixture use Drag and Drop~
 - Real-time 2D visualization of store layouts ✅
 - Section/Shelf/Product hierarchy management ✅
 - Collision detection ✅
