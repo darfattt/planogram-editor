@@ -11,6 +11,8 @@ export interface Section {
   height: number;
   name?: string;
   type?: string|'Section';
+  category?: string;
+  subCategory?: string;
 }
 
 export interface Shelf {
@@ -23,6 +25,8 @@ export interface Shelf {
   relativeX?: number;
   relativeY?: number;
   type?: string|'Shelf';
+  category?: string;
+  subCategory?: string;
 }
 
 export interface Product {

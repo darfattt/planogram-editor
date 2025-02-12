@@ -34,8 +34,13 @@ A desktop application for creating and editing retail planograms with 2D visuali
 - Load and Save Feature ✅
 - Toggle Live Image ✅
 - Select Node Indicator ✅
-- Copy, Cut, Paste and Delete Object 🚧
+- ~~Copy, Cut, Paste and~~ Delete Object 🚧
 - Multiple Product Size ✅ 
+- Product Properties
+- Select Products Behaviour 
+  - Double clicking will show properties
+  - When click will select object within same type/subcategory
+  - Blink-ing objets 
 
 ## 📦 Installation
 

@@ -12,14 +12,7 @@
       <div class="template-item">
         <button class="add-button" @click.stop.prevent="addProductToCanvas(100, 100)">+ Add New (100x100)</button>
       </div>
-    <div
-      class="template-item"
-      draggable="true"
-      @dragstart="handleDragStart"
-    >
-      <div class="product-preview"></div>
-      <span>Product</span>
-    </div>
+    
   </div>
 </template>
 
@@ -101,7 +94,7 @@ export default defineComponent({
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  cursor: move;
+  cursor: pointer;
   background: white;
   display: flex;
   flex-direction: column;
