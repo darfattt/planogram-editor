@@ -30,7 +30,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
   const initializeTestData = () => {
     // Test Section
     const testSection = {
-      id: uuidv4(),
+      id: "section1",
       x: 500,
       y: 200,
       width: 400,
@@ -190,7 +190,6 @@ export const usePlanogramStore = defineStore('planogram', () => {
              '/src/assets/products/golda.png',
     }
     products.value.push(newProduct)
-    console.log('newProduct', newProduct);
     return newProduct
   }
 
@@ -240,6 +239,51 @@ export const usePlanogramStore = defineStore('planogram', () => {
     }
   }
 
+  const addSection = (payload: {
+    x: number
+    y: number
+    width: number
+    height: number
+  }) => {
+    const newSection: Section = {
+      id: uuidv4(),
+      x: payload.x,
+      y: payload.y,
+      width: payload.width,
+      height: payload.height,
+      name: 'New Section',
+      category: 'fixtures',
+      subCategory: 'section'
+    }
+    sections.value.push(newSection)
+    return newSection
+  }
+
+  const addShelf = (payload: {
+    x: number
+    y: number
+    width: number
+    height: number
+    sectionId?: string
+    relativeX?: number
+    relativeY?: number
+  }) => {
+    const newShelf: Shelf = {
+      id: uuidv4(),
+      x: payload.x,
+      y: payload.y,
+      width: payload.width,
+      height: payload.height,
+      sectionId: payload.sectionId ?? 'section1',
+      relativeX: payload.relativeX ?? 0,
+      relativeY: payload.relativeY ?? 0,
+      category: 'fixtures',
+      subCategory: 'shelf'
+    }
+    shelves.value.push(newShelf)
+    return newShelf
+  }
+
   return {
     sections,
     shelves,
@@ -256,6 +300,8 @@ export const usePlanogramStore = defineStore('planogram', () => {
     addProduct,
     updateProductPosition,
     deleteProduct,
-    deleteShelf
+    deleteShelf,
+    addSection,
+    addShelf
   }
 })

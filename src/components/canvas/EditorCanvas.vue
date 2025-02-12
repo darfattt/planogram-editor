@@ -42,6 +42,14 @@
         :key="product.id"
         :product="product"
       />
+      <ShelfComponent
+          v-for="shelf in standaloneShelves"
+          :key="shelf.id"
+          :shelf="shelf"
+          :products="getProductsByShelf(shelf.id)"
+          @update-position="handleProductPositionUpdate"
+        >
+        </ShelfComponent>
     </v-layer>
   </v-stage>
 </template>
@@ -69,7 +77,7 @@ export default defineComponent({
   },
   setup(props, { emit }) {
     const store = usePlanogramStore()
-    const { sections, shelves, products, standaloneProducts } = storeToRefs(store)
+    const { sections, shelves, products, standaloneProducts,standaloneShelves } = storeToRefs(store)
     const { getShelvesBySection, getProductsBySection, getProductsByShelf, initializeTestData, addProduct, updateProductPosition } = store
 
     const { stageRef } = useDragAndDrop()
@@ -275,6 +283,7 @@ export default defineComponent({
       shelves,
       products,
       standaloneProducts,
+      standaloneShelves,
       getShelvesBySection,
       getProductsBySection,
       getProductsByShelf,

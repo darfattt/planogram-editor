@@ -1,54 +1,46 @@
 <template>
   <div class="fixture-template">
-    <div
-      class="template-item"
-      draggable="true"
-      @dragstart="(e) => {
-        if (e.dataTransfer) {
-          e.dataTransfer.setData('text/plain', 'fixture');
-          e.dataTransfer.effectAllowed = 'move';
-        }
-      }"
-    >
-      <div class="section-preview"></div>
-      <span>Section</span>
+    <div class="template-item" @click="addSectionToCanvas">
+      <button class="add-button" @click.stop.prevent="addSectionToCanvas"></button>
+      <span>Add Section</span>
     </div>
-    <div
-      class="template-item"
-      draggable="true"
-      @dragstart="(e) => {
-        if (e.dataTransfer) {
-          e.dataTransfer.setData('text/plain', 'shelf');
-          e.dataTransfer.effectAllowed = 'move';
-        }
-      }"
-    >
-      <div class="shelf-preview"></div>
-      <span>Shelf</span>
+    <div class="template-item" @click="addShelfToCanvas">
+      <button class="add-button" @click.stop.prevent="addShelfToCanvas"></button>
+      <span>Add Shelf</span>
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import type { DraggedItem } from '../../types'
+import { usePlanogramStore } from '../../composables/usePlanogramStore'
 
 export default defineComponent({
   name: 'FixtureTemplate',
-  emits: ['dragstart'],
-  setup(_, { emit }) {
-    const handleDragStart = (type: 'section' | 'shelf') => {
-      const item: DraggedItem = {
-        type,
-        properties: type === 'section' 
-          ? { width: 400, height: 600 }
-          : { width: 200, height: 10 }
-      }
-      emit('dragstart', item)
+  setup() {
+    const planogramStore = usePlanogramStore()
+
+    const addSectionToCanvas = () => {
+      planogramStore.addSection({
+        x: 0,
+        y: 100,
+        width: 400,
+        height: 600
+      })
+    }
+
+    const addShelfToCanvas = () => {
+      planogramStore.addShelf({
+        x: 0,
+        y: 0,
+        width: 400,
+        height: 10
+      })
     }
 
     return {
-      handleDragStart
+      addSectionToCanvas,
+      addShelfToCanvas
     }
   }
 })
@@ -65,7 +57,7 @@ export default defineComponent({
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  cursor: move;
+  cursor: pointer;
   background: white;
   display: flex;
   flex-direction: column;
