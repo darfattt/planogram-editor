@@ -20,6 +20,8 @@ export interface Section {
   width: number
   height: number
   name?: string
+  category: string
+  subCategory: string
   // Add other section properties as needed
 }
 
@@ -32,11 +34,14 @@ export interface Shelf {
   sectionId?: string | null
   relativeX?: number
   relativeY?: number
+  category: string
+  subCategory: string
   // Add other shelf properties as needed
 }
 
 export interface Product {
   id: string
+  code: string
   x: number
   y: number
   width: number
@@ -48,7 +53,7 @@ export interface Product {
   category: string
   type: string
   color?: string
-  image?:string|null
+  image?: string | null
   // Add other product properties as needed
 }
 

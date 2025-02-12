@@ -28,11 +28,11 @@ export const usePlanogramStore = defineStore('planogram', () => {
     products.value.filter(p => p.shelfId === shelfId)
 
   const initializeTestData = () => {
-    // Test Section
+    // Test Section centered on canvas
     const testSection = {
       id: "section1",
-      x: 500,
-      y: 200,
+      x: (window.innerWidth - 250 - 400) / 2, // Center horizontally (canvas width - section width) / 2
+      y: (window.innerHeight - 60 - 600) / 2, // Center vertically (canvas height - section height) / 2
       width: 400,
       height: 600,
       name: 'Test Section',
@@ -72,6 +72,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     // Test Product on Shelf
     products.value.push({
       id: 'product1OnShelfe',
+      code: 'pepsi01',
       x: 100,
       y: 100,
       relativeX: 0,
@@ -88,6 +89,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     // Standalone Product
     products.value.push({
       id: 'product2Standalone',
+      code: 'cola01',
       x: 400,
       y: 200,
       width: 50,
@@ -98,6 +100,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     })
     products.value.push({
       id: 'product3',
+      code: 'golda01',
       x: 300,
       y: 200,
       width: 50,
@@ -171,9 +174,11 @@ export const usePlanogramStore = defineStore('planogram', () => {
     relativeY?: number
     type?: string
     image?: string
+    code?: string
   }) => {
     const newProduct: Product = {
       id: uuidv4(),
+      code: payload.code || '',
       x: payload.shelfId ? payload.relativeX ?? 0 : payload.x,
       y: payload.shelfId ? payload.relativeY ?? 0 : payload.y,
       width: payload.width,
