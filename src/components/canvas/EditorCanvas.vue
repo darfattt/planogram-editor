@@ -121,7 +121,9 @@ export default defineComponent({
       y: section.y,
       draggable: true,
       category: 'fixtures',
-      subCategory: 'section'
+      subCategory: 'section',
+      width: section.width,
+      height: section.height,
     })
 
     const sectionRectConfig = (section: Section) => ({
