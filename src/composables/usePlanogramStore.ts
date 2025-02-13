@@ -279,7 +279,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
       y: payload.y,
       width: payload.width,
       height: payload.height,
-      sectionId: payload.sectionId ?? 'section1',
+      sectionId: payload.sectionId,
       relativeX: payload.relativeX ?? 0,
       relativeY: payload.relativeY ?? 0,
       category: 'fixtures',
