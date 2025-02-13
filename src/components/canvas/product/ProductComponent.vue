@@ -46,6 +46,13 @@ import {
   COLLISION_ADJUSTMENT,
   Y_OFFSET_PRODUCT_ON_TOP_OF_SHELF
 } from './constants'
+import { 
+  CATEGORY_PRODUCT,
+  DEFAULT_CATEGORY_PRODUCT,
+  DEFAULT_TYPE,
+  ATTR_CATEGORY,
+  ATTR_ID
+} from '../shared/constants'
 import type { 
   ProductCollisionState, 
   PositionData, 
@@ -65,11 +72,11 @@ export default defineComponent({
     },
     category: {
       type: String,
-      default: 'Product'
+      default: DEFAULT_CATEGORY_PRODUCT
     },
     type: {
       type: String,
-      default: '-'
+      default: DEFAULT_TYPE
     },
     relativeTo: {
       type: Boolean,
@@ -128,8 +135,8 @@ export default defineComponent({
       if (!stage) return
 
       const allProducts = stage.find((n: Node) => 
-        n.getAttr('category')?.toLowerCase() === 'product' && 
-        n.getAttr('id') !== props.product.id
+        n.getAttr(ATTR_CATEGORY)?.toLowerCase() === CATEGORY_PRODUCT && 
+        n.getAttr(ATTR_ID) !== props.product.id
       )
 
       isProductHaveCollision.value = handleProductCollisions(
@@ -174,7 +181,7 @@ export default defineComponent({
       )
 
       // Reset collision state if needed
-      if(isProductHaveCollision.value.productId === node.getAttr('id') && 
+      if(isProductHaveCollision.value.productId === node.getAttr(ATTR_ID) && 
          isProductHaveCollision.value.hasCollision) {
         isProductHaveCollision.value.collisionProduct?.setAttrs({
           fill: DEFAULT_FILL_COLOR

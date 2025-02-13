@@ -1,9 +1,14 @@
 import type { Node } from 'konva/lib/Node'
 import type { Stage } from 'konva/lib/Stage'
 import { 
-  SECTION_CATEGORY, 
-  SECTION_SUB_CATEGORY 
-} from '../constants'
+  NODE_TYPE_GROUP,
+  CATEGORY_FIXTURES,
+  SUB_CATEGORY_SECTION,
+  ATTR_CATEGORY,
+  ATTR_SUB_CATEGORY,
+  ATTR_WIDTH,
+  ATTR_HEIGHT
+} from '../../shared/constants'
 import type { 
   SectionBounds, 
   ShelfBounds, 
@@ -12,9 +17,9 @@ import type {
 
 export function findSections(stage: Stage): Node[] {
   return stage.find((node: Node) => 
-    node.getType() === 'Group' && 
-    node.getAttr('category') === SECTION_CATEGORY && 
-    node.getAttr('subCategory') === SECTION_SUB_CATEGORY
+    node.getType() === NODE_TYPE_GROUP && 
+    node.getAttr(ATTR_CATEGORY) === CATEGORY_FIXTURES && 
+    node.getAttr(ATTR_SUB_CATEGORY) === SUB_CATEGORY_SECTION
   )
 }
 
@@ -27,8 +32,8 @@ export function checkSectionIntersection(
   const bounds: SectionBounds = {
     sectionX: section.x(),
     sectionY: section.y(),
-    sectionWidth: section.width(),
-    sectionHeight: section.height(),
+    sectionWidth: section.getAttr(ATTR_WIDTH),
+    sectionHeight: section.getAttr(ATTR_HEIGHT),
     shelfWidth,
     shelfHeight
   }

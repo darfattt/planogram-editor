@@ -5,8 +5,8 @@
       x: shelf.sectionId ? shelf.relativeX : shelf.x,
       y: shelf.sectionId ? shelf.relativeY : shelf.y,
       draggable: true,
-      category: SHELF_CATEGORY,
-      subCategory: SHELF_SUB_CATEGORY,
+      category: CATEGORY_FIXTURES,
+      subCategory: SUB_CATEGORY_SHELF,
       width: shelf.width,
       height: shelf.height,
       sectionId: shelf.sectionId? shelf.sectionId : null,
@@ -40,10 +40,18 @@ import { usePlanogramStore } from '../../../composables/usePlanogramStore'
 import { useSelectionStore } from '../../../composables/useSelectionStore'
 import { 
   SHELF_STYLES, 
-  SHELF_CATEGORY, 
-  SHELF_SUB_CATEGORY,
   DEFAULT_POSITION 
 } from './constants'
+import {
+  CATEGORY_FIXTURES,
+  SUB_CATEGORY_SHELF,
+  SUB_CATEGORY_SECTION,
+  ATTR_CATEGORY,
+  ATTR_SUB_CATEGORY,
+  ATTR_SECTION_ID,
+  NODE_TYPE_RECT,
+  ATTR_ID
+} from '../shared/constants'
 import type { 
   ShelfProps,
   ShelfEmits,
@@ -98,8 +106,9 @@ export default defineComponent({
       console.log('handleDragEnd', props.shelf.id)
       debugStore.clearDragNodePosition()
       const node = e.target
-      if(node.getAttr('category') !== SHELF_CATEGORY && node.getAttr('subCategory') !== SHELF_SUB_CATEGORY) return
-      if (node.getAttr('sectionId') != null) return;
+      if(node.getAttr(ATTR_CATEGORY) !== CATEGORY_FIXTURES && 
+         node.getAttr(ATTR_SUB_CATEGORY) !== SUB_CATEGORY_SHELF) return
+      if (node.getAttr(ATTR_SECTION_ID) != null) return;
       
       const pos = node.getAbsolutePosition()
       const stage = node.getStage();
@@ -136,7 +145,7 @@ export default defineComponent({
       const productNode = e.target
       const position = calculateProductPosition(productNode, props.shelf.x, props.shelf.y)
       emit('product-drag', {
-        productId: productNode.attrs.id,
+        productId: productNode.attrs[ATTR_ID],
         ...position
       })
     }
@@ -157,7 +166,7 @@ export default defineComponent({
     }
 
     const handleShelfClick = (e: KonvaEventObject<MouseEvent>) => {
-      if (e.target === e.target.getStage()?.findOne('Rect')) {
+      if (e.target === e.target.getStage()?.findOne(NODE_TYPE_RECT)) {
         selectionStore.clearSelection()
       }
     }
@@ -171,8 +180,8 @@ export default defineComponent({
       handleProductDrag,
       handleProductDragStart,
       handleShelfClick,
-      SHELF_CATEGORY,
-      SHELF_SUB_CATEGORY
+      CATEGORY_FIXTURES,
+      SUB_CATEGORY_SHELF
     }
   }
 })
