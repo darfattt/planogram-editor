@@ -20,6 +20,13 @@ export const ATTR_SECTION_ID = 'sectionId'
 export const ATTR_SHELF_DATA = 'shelfData'
 export const ATTR_X = 'x'
 export const ATTR_Y = 'y'
+export const ATTR_COLOR = 'color'
+export const ATTR_FILL = 'fill'
+export const ATTR_RELATIVE_X = 'relativeX'
+export const ATTR_RELATIVE_Y = 'relativeY'
+
+// Colors
+export const COLOR_RED = 'red'
 
 // Common values
 export const DEFAULT_CATEGORY_PRODUCT = 'Product'

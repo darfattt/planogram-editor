@@ -2,6 +2,13 @@ import type { Node } from 'konva/lib/Node'
 import type { Group } from 'konva/lib/Group'
 import { Y_OFFSET_PRODUCT_ON_TOP_OF_SHELF } from '../constants'
 import type { ShelfPositionData, ProductPositionData, PositionData } from '../product-model'
+import {
+  ATTR_SHELF_DATA,
+  ATTR_X,
+  ATTR_Y,
+  ATTR_ID,
+  ATTR_SECTION_ID
+} from '../../shared/constants'
 
 export function getShelfPositionData(
   shelf: Group,
@@ -9,7 +16,7 @@ export function getShelfPositionData(
   productHeight: number
 ): ShelfPositionData {
   const shelfPos = shelf.getAbsolutePosition()
-  const shelfData = shelf.getAttr('shelfData')
+  const shelfData = shelf.getAttr(ATTR_SHELF_DATA)
   
   return {
     relativeX: absolutePos.x - shelfPos.x,
@@ -24,9 +31,9 @@ export function getProductPositionData(
   productHeight: number,
   productGap: number
 ): ProductPositionData {
-  const relativeY = product.getAttr('y') - productHeight - productGap
+  const relativeY = product.getAttr(ATTR_Y) - productHeight - productGap
   return {
-    relativeX: product.getAttr('x'),
+    relativeX: product.getAttr(ATTR_X),
     relativeY,
     parentGroup: product.getParent(),
     productAttrs: product.getAttrs()
@@ -69,8 +76,8 @@ export function calculatePositionData(
       y: absolutePos.y,
       relativeX: positionData.relativeX,
       relativeY: positionData.relativeY,
-      shelfId: positionData.parentGroup?.getAttr('id'),
-      sectionId: positionData.parentGroup?.getAttr('shelfData').sectionId,
+      shelfId: positionData.parentGroup?.getAttr(ATTR_ID),
+      sectionId: positionData.parentGroup?.getAttr(ATTR_SHELF_DATA).sectionId,
       parentProductId: targetProduct.id(),
       foundProduct: true
     };

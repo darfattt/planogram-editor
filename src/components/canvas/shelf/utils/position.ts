@@ -1,4 +1,9 @@
 import type { Node } from 'konva/lib/Node'
+import {
+  ATTR_ID,
+  ATTR_X,
+  ATTR_Y
+} from '../../shared/constants'
 
 export interface ShelfPositionUpdate {
   sectionId: string
@@ -43,9 +48,15 @@ export function calculateProductPosition(
   }
 }
 
+export interface ProductWithPosition {
+  id: string
+  relativeX?: number
+  relativeY?: number
+}
+
 export function calculateProductDetachPosition(
   productId: string,
-  products: Array<{ id: string; relativeX?: number; relativeY?: number }>,
+  products: ProductWithPosition[],
   shelfX: number,
   shelfY: number
 ): { absoluteX: number; absoluteY: number } | null {

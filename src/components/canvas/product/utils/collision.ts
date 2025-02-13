@@ -1,6 +1,12 @@
 import type { Node, NodeConfig } from 'konva/lib/Node'
 import { COLLISION_ADJUSTMENT } from '../constants'
 import type { ProductCollisionState } from '../product-model'
+import { 
+  ATTR_ID,
+  ATTR_COLOR,
+  ATTR_FILL,
+  COLOR_RED
+} from '../../shared/constants'
 
 export function checkCollision(
   targetRect: { x: number; y: number; width: number; height: number },
@@ -31,16 +37,16 @@ export function handleProductCollisions(
     const productRect = product.getClientRect()
     const productNode = product as Node<NodeConfig>;
     const hasCollision = checkCollision(targetRect, productRect) && 
-                        product.getAttr('id') !== node.getAttr('id')
+                        product.getAttr(ATTR_ID) !== node.getAttr(ATTR_ID)
     if(hasCollision) {
       collisionState = {
-        productId: node.getAttr('id'),
+        productId: node.getAttr(ATTR_ID),
         hasCollision: true,
         collisionProduct: productNode
       }
-      product.setAttrs({ fill: 'red' })
+      product.setAttrs({ [ATTR_FILL]: COLOR_RED })
     } else {
-      product.setAttrs({ fill: productNode.getAttr('color')})
+      product.setAttrs({ [ATTR_FILL]: productNode.getAttr(ATTR_COLOR)})
     }
   })
 
