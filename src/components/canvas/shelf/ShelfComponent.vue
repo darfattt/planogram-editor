@@ -42,19 +42,23 @@ import {
   SHELF_STYLES, 
   SHELF_CATEGORY, 
   SHELF_SUB_CATEGORY,
-  SECTION_CATEGORY,
-  SECTION_SUB_CATEGORY,
   DEFAULT_POSITION 
 } from './constants'
 import type { 
   ShelfProps,
   ShelfEmits,
   ProductDragData,
-  ShelfConfig,
-  SectionBounds,
-  ShelfBounds,
-  SectionIntersection
+  ShelfConfig
 } from './shelf-model'
+import { 
+  findSections,
+  findIntersectingSection 
+} from './utils/element-finder'
+import {
+  calculateShelfPosition,
+  calculateProductPosition,
+  calculateProductDetachPosition
+} from './utils/position'
 
 export default defineComponent({
   name: 'ShelfComponent',
@@ -101,65 +105,20 @@ export default defineComponent({
       const stage = node.getStage();
       if (!stage) return
 
-      const sections = stage.find((node: Node) => 
-          node.getType() === 'Group' && 
-          node.getAttr('category') === SECTION_CATEGORY && 
-          node.getAttr('subCategory') === SECTION_SUB_CATEGORY
+      const sections = findSections(stage)
+      const foundSection = findIntersectingSection(
+        sections,
+        pos,
+        props.shelf.width,
+        props.shelf.height
       )
-      
-      let foundSection = null;
-      
-      for (const section of sections) {
-        const bounds: SectionBounds = {
-          sectionX: section.x(),
-          sectionY: section.y(),
-          sectionWidth: section.width(),
-          sectionHeight: section.height(),
-          shelfWidth: props.shelf.width,
-          shelfHeight: props.shelf.height
-        }
-        
-        const shelfBounds: ShelfBounds = {
-          shelfLeft: pos.x,
-          shelfRight: pos.x + bounds.shelfWidth,
-          shelfTop: pos.y,
-          shelfBottom: pos.y + bounds.shelfHeight
-        }
-        
-        const intersection: SectionIntersection = {
-          sectionRight: bounds.sectionX + bounds.sectionWidth,
-          sectionBottom: bounds.sectionY + bounds.sectionHeight
-        }
-
-        console.log(`Checking section ${section.id()} bounds: X ${bounds.sectionX}-${intersection.sectionRight}, Y ${bounds.sectionY}-${intersection.sectionBottom}. Shelf bounds: ${shelfBounds.shelfLeft}-${shelfBounds.shelfRight}, ${shelfBounds.shelfTop}-${shelfBounds.shelfBottom}`)
-
-        if (
-          shelfBounds.shelfLeft < intersection.sectionRight &&
-          shelfBounds.shelfRight > bounds.sectionX &&
-          shelfBounds.shelfTop < intersection.sectionBottom &&
-          shelfBounds.shelfBottom > bounds.sectionY
-        ) {
-          foundSection = section;
-          break;
-        }
-      }
 
       if (foundSection) {
         console.log(`Shelf ${props.shelf.id} is inside section ${foundSection.id()}`)
-        const sectionX = foundSection.x()
-        const sectionY = foundSection.y()
+        const positionUpdate = calculateShelfPosition(node, foundSection, pos)
         
-        node.moveTo(foundSection)
-        node.position({
-          x: 0,
-          y: pos.y - sectionY
-        })
-
-        props.shelf.sectionId = foundSection.id()
-        props.shelf.x = sectionX
-        props.shelf.y = pos.y
-        props.shelf.relativeX = 0
-        props.shelf.relativeY = pos.y - sectionY
+        // Update shelf properties
+        Object.assign(props.shelf, positionUpdate)
       } else {
         console.log(`Shelf ${props.shelf.id} is not within any section`)
       }
@@ -175,21 +134,24 @@ export default defineComponent({
 
     const handleProductDrag = (e: KonvaEventObject<DragEvent>) => {
       const productNode = e.target
-      
+      const position = calculateProductPosition(productNode, props.shelf.x, props.shelf.y)
       emit('product-drag', {
         productId: productNode.attrs.id,
-        x: productNode.x() - props.shelf.x,
-        y: productNode.y() - props.shelf.y
+        ...position
       })
     }
 
     const handleProductDragStart = (productId: string) => {
-      const product = props.products.find(p => p.id === productId)
-      if (product) {
+      const position = calculateProductDetachPosition(
+        productId,
+        props.products,
+        props.shelf.x,
+        props.shelf.y
+      )
+      if (position) {
         emit('product-detach', {
           productId,
-          absoluteX: props.shelf.x + (product.relativeX ?? 0),
-          absoluteY: props.shelf.y + (product.relativeY ?? 0)
+          ...position
         })
       }
     }

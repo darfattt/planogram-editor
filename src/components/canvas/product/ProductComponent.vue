@@ -52,6 +52,9 @@ import type {
   ShelfPositionData,
   ProductPositionData
 } from './product-model'
+import { handleProductCollisions } from './utils/collision'
+import { findElements, findTargetShelf, findTargetProduct } from './utils/element-finder'
+import { calculatePositionData } from './utils/position'
 
 export default defineComponent({
   name: 'ProductComponent',
@@ -129,32 +132,13 @@ export default defineComponent({
         n.getAttr('id') !== props.product.id
       )
 
-      const targetRect = node.getClientRect()
-      allProducts.forEach((product) => {
-        const productRect = product.getClientRect()
-        const isRightOf = targetRect.x > productRect.x + productRect.width - COLLISION_ADJUSTMENT;
-        const isLeftOf = targetRect.x + targetRect.width < productRect.x + COLLISION_ADJUSTMENT;
-        const isBelow = targetRect.y > productRect.y + productRect.height - COLLISION_ADJUSTMENT;
-        const isAbove = targetRect.y + targetRect.height < productRect.y + (COLLISION_ADJUSTMENT + 5);
-        
-        const hasCollision = !(isRightOf || isLeftOf || isBelow || isAbove) && 
-                            product.getAttr('id') !== node.getAttr('id');
-
-        if(hasCollision){
-          isProductHaveCollision.value = {
-            productId: node.getAttr('id'),
-            hasCollision: hasCollision,
-            collisionProduct: product as Node<NodeConfig>
-          };
-          product.setAttrs({
-            fill: 'red'
-          });
-        } else {
-          product.setAttrs({
-            fill: DEFAULT_FILL_COLOR
-          });
-        }
-      })
+      isProductHaveCollision.value = handleProductCollisions(
+        node, 
+        allProducts, 
+        props.product.id,
+        DEFAULT_FILL_COLOR
+      )
+      
       node.getLayer()?.batchDraw()
     }
 
@@ -165,139 +149,43 @@ export default defineComponent({
       const stage = node.getStage()
       if (!stage) return
 
-      const findElements = () => {
-        const sections = stage.find((node: Node) => 
-          node.getType() === 'Group' && 
-          node.getAttr('category') === 'fixtures' && 
-          node.getAttr('subCategory') === 'section'
-        )
-
-        const shelves = sections.flatMap(section => 
-          (section as Group).getChildren(child => 
-            child.getAttr('category') === 'fixtures' && 
-            child.getAttr('subCategory') === 'shelf'
-          )
-        ) as Group[]
-
-        const allProducts = shelves.flatMap(shelf => 
-          shelf.getChildren(child => 
-            child.getAttr('category').toLowerCase() === 'product'
-          )
-        ).filter(p => p.id() !== props.product.id)
-
-        return { shelves, allProducts }
-      }
-
-      const getShelfPositionData = (shelf: Group): ShelfPositionData => {
-        const shelfPos = shelf.getAbsolutePosition()
-        const shelfData = shelf.getAttr('shelfData')
-        
-        return {
-          relativeX: absolutePos.x - shelfPos.x,
-          relativeY: (- props.product.height) - Y_OFFSET_PRODUCT_ON_TOP_OF_SHELF,
-          shelfPos,
-          shelfData
-        }
-      }
-
-      const getProductPositionData = (product: Node): ProductPositionData => {
-        const yOffsetProductOnTopOfProduct = selectionStore.productGap;
-        const relativeY = product.getAttr('y') - props.product.height - yOffsetProductOnTopOfProduct;
-        return {
-          relativeX: product.getAttr('x'),
-          relativeY: relativeY,
-          parentGroup: product.getParent(),
-          productAttrs: product.getAttrs()
-        }
-      }
-
-      const { shelves, allProducts } = findElements()
+      const { shelves, allProducts } = findElements(stage)
       
-      const targetShelf = shelves.find(shelf => {
-        const { shelfPos, shelfData } = getShelfPositionData(shelf)
-        const shelfWidth = shelf.getAttr('width')
-        const shelfHeight = shelf.getAttr('height')
-        const yTolerance = 10
+      const targetShelf = findTargetShelf(
+        shelves, 
+        absolutePos, 
+        props.product.height
+      )
 
-        return shelfData && shelfWidth && shelfHeight && (
-          absolutePos.x >= shelfPos.x &&
-          absolutePos.x <= shelfPos.x + shelfWidth &&
-          absolutePos.y + props.product.height + yTolerance >= shelfPos.y &&
-          absolutePos.y + props.product.height <= shelfPos.y + shelfHeight
-        )
-      })
+      const targetProduct = targetShelf ? null : findTargetProduct(
+        allProducts.filter(p => p.id() !== props.product.id),
+        absolutePos,
+        props.product.height
+      )
 
-      const targetProduct = targetShelf ? null : allProducts.find(product => {
-        const productPos = product.getAbsolutePosition()
-        const yTolerance = 10
-        const xTolerance = 5
-        return (
-          absolutePos.x + product.getAttr('width') + xTolerance >= productPos.x  &&
-          absolutePos.x <= productPos.x + product.getAttr('width') + xTolerance &&
-          absolutePos.y + yTolerance >= productPos.y - product.getAttr('height') &&
-          absolutePos.y <= productPos.y + product.getAttr('height')
-        )
-      })
+      const positionData = calculatePositionData(
+        node,
+        targetShelf,
+        targetProduct,
+        absolutePos,
+        props.product.height,
+        selectionStore.productGap,
+        originalPosition.value
+      )
 
-      const handlePositioning = (): PositionData => {
-        const productId = node.getAttr('id');
-        if(isProductHaveCollision.value.productId === productId && isProductHaveCollision.value.hasCollision) {
-          let collisionProduct = isProductHaveCollision.value.collisionProduct;
-          collisionProduct?.setAttrs({
-            fill: DEFAULT_FILL_COLOR
-          });
-          isProductHaveCollision.value = {
-            productId: null,
-            hasCollision: false,
-            collisionProduct: null
-          }
-        }
-        if (targetShelf) {
-          console.log({targetShelf});
-          const { relativeX, relativeY, shelfPos, shelfData } = getShelfPositionData(targetShelf)
-          node.moveTo(targetShelf)
-          targetShelf.add(node)
-          node.position({ x: relativeX, y: relativeY })
-          return {
-            x: absolutePos.x,
-            y: absolutePos.y,
-            relativeX,
-            relativeY,
-            shelfId: shelfData.id,
-            sectionId: shelfData.sectionId,
-            foundShelf: true
-          }
-        }
-        if (targetProduct) {
-          console.log('targetProduct', targetProduct)
-          const { relativeX, relativeY, parentGroup, productAttrs } = getProductPositionData(targetProduct)
-          console.log({parentGroup})
-          console.log({productAttrs})
-          node.moveTo(parentGroup).position({ x: relativeX, y: relativeY })
-          return {
-            x: absolutePos.x,
-            y: absolutePos.y,
-            relativeX,
-            relativeY,
-            shelfId: parentGroup?.getAttr('id'),
-            sectionId: parentGroup?.getAttr('shelfData').sectionId,
-            parentProductId: targetProduct.id(),
-            foundProduct: true
-          }
-        }
-        node.position(originalPosition.value)
-        return {
-          ...originalPosition.value,
-          relativeX: originalPosition.value.x,
-          relativeY: originalPosition.value.y,
-          foundProduct: false,
-          foundShelf: false
+      // Reset collision state if needed
+      if(isProductHaveCollision.value.productId === node.getAttr('id') && 
+         isProductHaveCollision.value.hasCollision) {
+        isProductHaveCollision.value.collisionProduct?.setAttrs({
+          fill: DEFAULT_FILL_COLOR
+        })
+        isProductHaveCollision.value = {
+          productId: null,
+          hasCollision: false,
+          collisionProduct: null
         }
       }
-
-      const positionData = handlePositioning()
-      console.log(positionData);
-      if(positionData.foundProduct || positionData.foundShelf){
+      if(positionData.foundProduct || positionData.foundShelf) {
         const { updateProductPosition } = usePlanogramStore()
         updateProductPosition({
           id: props.product.id,
