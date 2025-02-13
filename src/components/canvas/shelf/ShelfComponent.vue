@@ -5,8 +5,8 @@
       x: shelf.sectionId ? shelf.relativeX : shelf.x,
       y: shelf.sectionId ? shelf.relativeY : shelf.y,
       draggable: true,
-      category: 'fixtures',
-      subCategory: 'shelf',
+      category: SHELF_CATEGORY,
+      subCategory: SHELF_SUB_CATEGORY,
       width: shelf.width,
       height: shelf.height,
       sectionId: shelf.sectionId? shelf.sectionId : null,
@@ -33,12 +33,28 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
-import type { Shelf, Product } from '../../types'
-import type { KonvaEventObject,NodeConfig, Node } from 'konva/lib/Node'
-import ProductComponent from './ProductComponent.vue'
-import { useDebugStore } from '../../composables/useDebugStore'
-import { usePlanogramStore } from '../../composables/usePlanogramStore'
-import { useSelectionStore } from '../../composables/useSelectionStore'
+import type { KonvaEventObject, Node } from 'konva/lib/Node'
+import ProductComponent from '../product/ProductComponent.vue'
+import { useDebugStore } from '../../../composables/useDebugStore'
+import { usePlanogramStore } from '../../../composables/usePlanogramStore'
+import { useSelectionStore } from '../../../composables/useSelectionStore'
+import { 
+  SHELF_STYLES, 
+  SHELF_CATEGORY, 
+  SHELF_SUB_CATEGORY,
+  SECTION_CATEGORY,
+  SECTION_SUB_CATEGORY,
+  DEFAULT_POSITION 
+} from './constants'
+import type { 
+  ShelfProps,
+  ShelfEmits,
+  ProductDragData,
+  ShelfConfig,
+  SectionBounds,
+  ShelfBounds,
+  SectionIntersection
+} from './shelf-model'
 
 export default defineComponent({
   name: 'ShelfComponent',
@@ -47,11 +63,11 @@ export default defineComponent({
   },
   props: {
     shelf: {
-      type: Object as PropType<Shelf>,
+      type: Object as PropType<ShelfProps['shelf']>,
       required: true
     },
     products: {
-      type: Array as PropType<Product[]>,
+      type: Array as PropType<ShelfProps['products']>,
       required: true
     }
   },
@@ -60,77 +76,68 @@ export default defineComponent({
     const selectionStore = useSelectionStore()
     const { updateShelfPosition } = usePlanogramStore()
     const debugStore = useDebugStore()
-    const shelfConfig = {
+
+    const shelfConfig: ShelfConfig = {
       width: props.shelf.width,
       height: props.shelf.height,
-      fill: '#9e9e9e',
-      stroke: '#757575',
-      strokeWidth: 1,
-      category: 'fixtures',
-      subCategory: 'shelf',
+      ...SHELF_STYLES,
       sectionId: props.shelf.sectionId
     }
 
     const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
       const node = e.target
       const pos = node.getStage()?.getPointerPosition()
-      debugStore.setDragNodePosition(pos ?? { x: 0, y: 0 })
-      // Update shelf position in store
-      // updateShelfPosition({
-      //   id: props.shelf.id,
-      //   x: pos?.x || 0,
-      //   y: pos?.y || 0,
-      //   products: props.products.map(product => ({
-      //     id: product.id,
-      //     relativeX: product.relativeX ?? 0,
-      //     relativeY: product.relativeY ?? 0
-      //   }))
-      // })
+      debugStore.setDragNodePosition(pos ?? DEFAULT_POSITION)
     }
 
     const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
       console.log('handleDragEnd', props.shelf.id)
       debugStore.clearDragNodePosition()
       const node = e.target
-      if(node.getAttr('category') !== 'fixtures' && node.getAttr('subCategory') !== 'shelf') return
+      if(node.getAttr('category') !== SHELF_CATEGORY && node.getAttr('subCategory') !== SHELF_SUB_CATEGORY) return
       if (node.getAttr('sectionId') != null) return;
       
       const pos = node.getAbsolutePosition()
       const stage = node.getStage();
       if (!stage) return
-      // Use the existing sections ref from storeToRefs:
+
       const sections = stage.find((node: Node) => 
           node.getType() === 'Group' && 
-          node.getAttr('category') === 'fixtures' && 
-          node.getAttr('subCategory') === 'section'
+          node.getAttr('category') === SECTION_CATEGORY && 
+          node.getAttr('subCategory') === SECTION_SUB_CATEGORY
       )
       
-      let foundSection: Node<NodeConfig> | null = null;
+      let foundSection = null;
       
       for (const section of sections) {
-        const sectionX = section.x();
-        const sectionY = section.y();
-        const sectionWidth = section.width();
-        const sectionHeight = section.height();
-        const shelfWidth = props.shelf.width;
-        const shelfHeight = props.shelf.height;
+        const bounds: SectionBounds = {
+          sectionX: section.x(),
+          sectionY: section.y(),
+          sectionWidth: section.width(),
+          sectionHeight: section.height(),
+          shelfWidth: props.shelf.width,
+          shelfHeight: props.shelf.height
+        }
         
-        // Check if shelf rectangle intersects with section rectangle
-        const shelfLeft = pos.x;
-        const shelfRight = pos.x + shelfWidth;
-        const shelfTop = pos.y;
-        const shelfBottom = pos.y + shelfHeight;
+        const shelfBounds: ShelfBounds = {
+          shelfLeft: pos.x,
+          shelfRight: pos.x + bounds.shelfWidth,
+          shelfTop: pos.y,
+          shelfBottom: pos.y + bounds.shelfHeight
+        }
         
-        const sectionRight = sectionX + sectionWidth;
-        const sectionBottom = sectionY + sectionHeight;
+        const intersection: SectionIntersection = {
+          sectionRight: bounds.sectionX + bounds.sectionWidth,
+          sectionBottom: bounds.sectionY + bounds.sectionHeight
+        }
 
-        console.log(`Checking section ${section.id()} bounds: X ${sectionX}-${sectionRight}, Y ${sectionY}-${sectionBottom}. Shelf bounds: ${shelfLeft}-${shelfRight}, ${shelfTop}-${shelfBottom}`)
+        console.log(`Checking section ${section.id()} bounds: X ${bounds.sectionX}-${intersection.sectionRight}, Y ${bounds.sectionY}-${intersection.sectionBottom}. Shelf bounds: ${shelfBounds.shelfLeft}-${shelfBounds.shelfRight}, ${shelfBounds.shelfTop}-${shelfBounds.shelfBottom}`)
 
         if (
-          shelfLeft < sectionRight &&
-          shelfRight > sectionX &&
-          shelfTop < sectionBottom &&
-          shelfBottom > sectionY
+          shelfBounds.shelfLeft < intersection.sectionRight &&
+          shelfBounds.shelfRight > bounds.sectionX &&
+          shelfBounds.shelfTop < intersection.sectionBottom &&
+          shelfBounds.shelfBottom > bounds.sectionY
         ) {
           foundSection = section;
           break;
@@ -142,14 +149,12 @@ export default defineComponent({
         const sectionX = foundSection.x()
         const sectionY = foundSection.y()
         
-        // Move shelf group into section and set positions
         node.moveTo(foundSection)
         node.position({
-          x: 0, // Set relative X to 0 within section
-          y: pos.y - sectionY // Maintain current absolute Y position relative to section
+          x: 0,
+          y: pos.y - sectionY
         })
 
-        // Update shelf properties
         props.shelf.sectionId = foundSection.id()
         props.shelf.x = sectionX
         props.shelf.y = pos.y
@@ -157,20 +162,7 @@ export default defineComponent({
         props.shelf.relativeY = pos.y - sectionY
       } else {
         console.log(`Shelf ${props.shelf.id} is not within any section`)
-        // props.shelf.sectionId = undefined
-        // props.shelf.x = pos.x
-        // props.shelf.y = pos.y
-        // props.shelf.relativeX = undefined
-        // props.shelf.relativeY = undefined
       }
-
-      // Finalize position in store
-      // finalizeShelfPosition({
-      //   id: props.shelf.id,
-      //   x: pos.x,
-      //   y: pos.y,
-      //   products: props.products
-      // })
     }
 
     const handleMouseEnter = (e: any) => {
@@ -192,8 +184,7 @@ export default defineComponent({
     }
 
     const handleProductDragStart = (productId: string) => {
-      // Convert to absolute position and detach from shelf
-      const product = props.products.find((p: Product) => p.id === productId)
+      const product = props.products.find(p => p.id === productId)
       if (product) {
         emit('product-detach', {
           productId,
@@ -204,7 +195,6 @@ export default defineComponent({
     }
 
     const handleShelfClick = (e: KonvaEventObject<MouseEvent>) => {
-      // Only clear selection if clicking directly on the shelf rectangle itself
       if (e.target === e.target.getStage()?.findOne('Rect')) {
         selectionStore.clearSelection()
       }
@@ -218,8 +208,10 @@ export default defineComponent({
       handleMouseLeave,
       handleProductDrag,
       handleProductDragStart,
-      handleShelfClick
+      handleShelfClick,
+      SHELF_CATEGORY,
+      SHELF_SUB_CATEGORY
     }
   }
 })
-</script> 
+</script>

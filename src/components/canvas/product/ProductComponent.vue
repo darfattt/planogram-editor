@@ -31,15 +31,27 @@
 
 <script lang="ts">
 import { defineComponent, computed, type PropType, ref, onMounted } from 'vue'
-import type { Product } from '../../types'
 import type { KonvaEventObject, NodeConfig } from 'konva/lib/Node'
 import type { Group } from 'konva/lib/Group'
 import type { Node } from 'konva/lib/Node'
-import { useDebugStore } from '../../composables/useDebugStore'
-import { useSelectionStore } from '../../composables/useSelectionStore'
-import type { Rect } from 'konva/lib/shapes/Rect'
-import { usePlanogramStore } from '../../composables/usePlanogramStore'
+import { useDebugStore } from '../../../composables/useDebugStore'
+import { useSelectionStore } from '../../../composables/useSelectionStore'
+import { usePlanogramStore } from '../../../composables/usePlanogramStore'
 import { storeToRefs } from 'pinia'
+import type { Product } from '../../../types'
+import { 
+  DEFAULT_FILL_COLOR, 
+  SELECTED_STYLES, 
+  DEFAULT_STYLES,
+  COLLISION_ADJUSTMENT,
+  Y_OFFSET_PRODUCT_ON_TOP_OF_SHELF
+} from './constants'
+import type { 
+  ProductCollisionState, 
+  PositionData, 
+  ShelfPositionData,
+  ProductPositionData
+} from './product-model'
 
 export default defineComponent({
   name: 'ProductComponent',
@@ -63,7 +75,6 @@ export default defineComponent({
   },
   emits: ['dragend', 'drag-start', 'update-position'],
   setup(props, { emit }) {
-    const defaultFillColor = '#81C784';
     const selectionStore = useSelectionStore()
     const store = usePlanogramStore()
     const { showProductImages } = storeToRefs(store)
@@ -83,26 +94,12 @@ export default defineComponent({
       selectionStore.selectedIds.value.includes(props.product.id)
     )
 
-    const selectedStyles = {
-      stroke: '#2196F3',
-      strokeWidth: 2,
-      shadowColor: '#2196F3',
-      shadowBlur: 10,
-      shadowOpacity: 0.3,
-      shadowOffset: { x: 2, y: 2 }
-    }
-
     const productConfig = computed(() => ({
       id: props.product.id, 
       width: props.product.width,
       height: props.product.height,
-      fill: defaultFillColor,
-      ...(isSelected.value ? selectedStyles : {
-        stroke: '#66bb6a',
-        strokeWidth: 1,
-        shadowBlur: 0,
-        shadowOpacity: 0
-      }),
+      fill: DEFAULT_FILL_COLOR,
+      ...(isSelected.value ? SELECTED_STYLES : DEFAULT_STYLES),
       category: props.category,
       type: props.type,
       code: props.product.code
@@ -110,10 +107,10 @@ export default defineComponent({
 
     const originalPosition = ref({ x: 0, y: 0 })
     const debugStore = useDebugStore()
-    const isProductHaveCollision = ref({
-      productId: null as string | null,
+    const isProductHaveCollision = ref<ProductCollisionState>({
+      productId: null,
       hasCollision: false,
-      collisionProduct: null as Node<NodeConfig> | null
+      collisionProduct: null
     })
 
     const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
@@ -121,45 +118,43 @@ export default defineComponent({
       const pos = node.getAbsolutePosition()
       debugStore.setDragNodePosition(pos)
       
-      // Keep original position update logic
       node.x(node.x())
       node.y(node.y())
 
       const stage = node.getStage()
       if (!stage) return
-      // Get all product nodes except current one
+
       const allProducts = stage.find((n: Node) => 
         n.getAttr('category')?.toLowerCase() === 'product' && 
         n.getAttr('id') !== props.product.id
       )
-      // Get current node's bounding box (use group position)
+
       const targetRect = node.getClientRect()
-      // Check collisions with all other products
       allProducts.forEach((product) => {
         const productRect = product.getClientRect()
-        let collisionAdjustment = 10
-        // Check intersection using same logic as sample
-        const isRightOf = targetRect.x > productRect.x + productRect.width - collisionAdjustment;
-        const isLeftOf = targetRect.x + targetRect.width < productRect.x + collisionAdjustment;
-        const isBelow = targetRect.y > productRect.y + productRect.height - collisionAdjustment ;
-        const isAbove = targetRect.y + targetRect.height < productRect.y + ( collisionAdjustment+5);
+        const isRightOf = targetRect.x > productRect.x + productRect.width - COLLISION_ADJUSTMENT;
+        const isLeftOf = targetRect.x + targetRect.width < productRect.x + COLLISION_ADJUSTMENT;
+        const isBelow = targetRect.y > productRect.y + productRect.height - COLLISION_ADJUSTMENT;
+        const isAbove = targetRect.y + targetRect.height < productRect.y + (COLLISION_ADJUSTMENT + 5);
         
         const hasCollision = !(isRightOf || isLeftOf || isBelow || isAbove) && 
                             product.getAttr('id') !== node.getAttr('id');
 
-        // Update color based on collision
         if(hasCollision){
-          isProductHaveCollision.value = {productId:node.getAttr('id'),hasCollision:hasCollision,collisionProduct:product as Node<NodeConfig>};
-            product.setAttrs({
-              fill: 'red'
-            });
-        } else{
-            product.setAttrs({
-            fill: defaultFillColor
+          isProductHaveCollision.value = {
+            productId: node.getAttr('id'),
+            hasCollision: hasCollision,
+            collisionProduct: product as Node<NodeConfig>
+          };
+          product.setAttrs({
+            fill: 'red'
+          });
+        } else {
+          product.setAttrs({
+            fill: DEFAULT_FILL_COLOR
           });
         }
       })
-      // Batch draw to update all changes at once
       node.getLayer()?.batchDraw()
     }
 
@@ -170,7 +165,6 @@ export default defineComponent({
       const stage = node.getStage()
       if (!stage) return
 
-      // Helper function to find relevant elements
       const findElements = () => {
         const sections = stage.find((node: Node) => 
           node.getType() === 'Group' && 
@@ -193,22 +187,20 @@ export default defineComponent({
 
         return { shelves, allProducts }
       }
-      const yOffsetProductOnTopOfShelf = 3
-      // Position calculation helpers
-      const getShelfPositionData = (shelf: Group) => {
+
+      const getShelfPositionData = (shelf: Group): ShelfPositionData => {
         const shelfPos = shelf.getAbsolutePosition()
         const shelfData = shelf.getAttr('shelfData')
         
         return {
           relativeX: absolutePos.x - shelfPos.x,
-          relativeY: (- props.product.height) - yOffsetProductOnTopOfShelf,
+          relativeY: (- props.product.height) - Y_OFFSET_PRODUCT_ON_TOP_OF_SHELF,
           shelfPos,
           shelfData
         }
       }
 
-      const getProductPositionData = (product: Node) => {
-        const productPos = product.getAbsolutePosition()
+      const getProductPositionData = (product: Node): ProductPositionData => {
         const yOffsetProductOnTopOfProduct = selectionStore.productGap;
         const relativeY = product.getAttr('y') - props.product.height - yOffsetProductOnTopOfProduct;
         return {
@@ -219,7 +211,6 @@ export default defineComponent({
         }
       }
 
-      // Determine drag result type
       const { shelves, allProducts } = findElements()
       
       const targetShelf = shelves.find(shelf => {
@@ -248,30 +239,25 @@ export default defineComponent({
         )
       })
 
-      // Handle final positioning
-      const handlePositioning = () => {
+      const handlePositioning = (): PositionData => {
         const productId = node.getAttr('id');
-        //if product has collision then revert to original postiion
         if(isProductHaveCollision.value.productId === productId && isProductHaveCollision.value.hasCollision) {
           let collisionProduct = isProductHaveCollision.value.collisionProduct;
           collisionProduct?.setAttrs({
-            fill: defaultFillColor
+            fill: DEFAULT_FILL_COLOR
           });
-           //reset isProductHaveCollision
           isProductHaveCollision.value = {
             productId: null,
             hasCollision: false,
-            collisionProduct: null as Node<NodeConfig> | null
+            collisionProduct: null
           }
         }
         if (targetShelf) {
           console.log({targetShelf});
           const { relativeX, relativeY, shelfPos, shelfData } = getShelfPositionData(targetShelf)
-          const shelfChildren = targetShelf.getChildren()
           node.moveTo(targetShelf)
           targetShelf.add(node)
           node.position({ x: relativeX, y: relativeY })
-          //node.zIndex(shelfChildren.length)
           return {
             x: absolutePos.x,
             y: absolutePos.y,
@@ -299,7 +285,6 @@ export default defineComponent({
             foundProduct: true
           }
         }
-        //back to original position
         node.position(originalPosition.value)
         return {
           ...originalPosition.value,
@@ -313,7 +298,6 @@ export default defineComponent({
       const positionData = handlePositioning()
       console.log(positionData);
       if(positionData.foundProduct || positionData.foundShelf){
-        // Update store with new position
         const { updateProductPosition } = usePlanogramStore()
         updateProductPosition({
           id: props.product.id,
@@ -325,20 +309,12 @@ export default defineComponent({
           sectionId: positionData.sectionId,
         })
       }
-      // Existing emit calls
+
       emit('dragend', {
         id: props.product.id,
         parentProductId: null,
         ...positionData
       })
-      
-      // emit('update-position', {
-      //   id: props.product.id,
-      //   x: positionData.x,
-      //   y: positionData.y,
-      //   relativeX: positionData.relativeX,
-      //   relativeY: positionData.relativeY
-      // })
     }
 
     const handleMouseEnter = (e: any) => {
@@ -354,7 +330,6 @@ export default defineComponent({
         x: e.target.x(),
         y: e.target.y()
       }
-      // Select product when drag starts
       selectionStore.selectOne(props.product.id)
       
       emit('drag-start', props.product.id)
