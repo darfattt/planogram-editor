@@ -83,7 +83,8 @@ export const usePlanogramStore = defineStore('planogram', () => {
       shelfId: testShelf.id,
       category: 'product',
       type: 'Food',
-      image: '/src/assets/products/pepsi.png'
+      image: '/src/assets/products/pepsi.png',
+      color: 'yellow'
     })
 
     // Standalone Product
@@ -192,7 +193,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
       category: 'product',
       image: payload.type === 'Drink' ? '/src/assets/products/cola.png' : 
              payload.type === 'Food' ? '/src/assets/products/pepsi.png' : 
-             '/src/assets/products/golda.png',
+             '/src/assets/products/default.png',
     }
     products.value.push(newProduct)
     return newProduct

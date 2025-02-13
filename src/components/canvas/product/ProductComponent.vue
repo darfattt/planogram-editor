@@ -9,7 +9,8 @@
       type: product.type,
       height: product.height,
       width: product.width,
-      code: product.code
+      code: product.code,
+      color: product.color
     }"
     @dragstart="handleDragStart"
     @dragmove="handleDragMove"
@@ -108,11 +109,12 @@ export default defineComponent({
       id: props.product.id, 
       width: props.product.width,
       height: props.product.height,
-      fill: DEFAULT_FILL_COLOR,
+      fill: props.product.color? props.product.color : DEFAULT_FILL_COLOR,
       ...(isSelected.value ? SELECTED_STYLES : DEFAULT_STYLES),
       category: props.category,
       type: props.type,
-      code: props.product.code
+      code: props.product.code,
+      color : props.product.color? props.product.color : DEFAULT_FILL_COLOR,
     }))
 
     const originalPosition = ref({ x: 0, y: 0 })
@@ -143,7 +145,7 @@ export default defineComponent({
         node, 
         allProducts, 
         props.product.id,
-        DEFAULT_FILL_COLOR
+        props.product.color?props.product.color : DEFAULT_FILL_COLOR
       )
       
       node.getLayer()?.batchDraw()

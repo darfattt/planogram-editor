@@ -29,18 +29,18 @@ export function handleProductCollisions(
 
   allProducts.forEach((product) => {
     const productRect = product.getClientRect()
+    const productNode = product as Node<NodeConfig>;
     const hasCollision = checkCollision(targetRect, productRect) && 
                         product.getAttr('id') !== node.getAttr('id')
-
     if(hasCollision) {
       collisionState = {
         productId: node.getAttr('id'),
         hasCollision: true,
-        collisionProduct: product as Node<NodeConfig>
+        collisionProduct: productNode
       }
       product.setAttrs({ fill: 'red' })
     } else {
-      product.setAttrs({ fill: defaultFillColor })
+      product.setAttrs({ fill: productNode.getAttr('color')})
     }
   })
 
