@@ -79,6 +79,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
       relativeY: -51,
       width: 50,
       height: 50,
+      depth: 10,
       sectionId: testSection.id,
       shelfId: testShelf.id,
       category: 'product',
@@ -95,6 +96,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
       y: 200,
       width: 50,
       height: 50,
+      depth: 10,
       category: 'product',
       type: 'Drink',
       image: '/src/assets/products/cola.png'
@@ -106,6 +108,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
       y: 200,
       width: 50,
       height: 50,
+      depth: 10,
       category: 'product',
       type: 'Medicine',
       image: '/src/assets/products/golda.png'
@@ -168,6 +171,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     y: number
     width: number
     height: number
+    depth: number
     color?: string
     shelfId?: string
     sectionId?: string
@@ -184,6 +188,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
       y: payload.shelfId ? payload.relativeY ?? 0 : payload.y,
       width: payload.width,
       height: payload.height,
+      depth: payload.depth,
       relativeX: payload.relativeX ?? (payload.shelfId ? payload.x : 0),
       relativeY: payload.relativeY ?? (payload.shelfId ? payload.y : 0),
       shelfId: payload.shelfId,

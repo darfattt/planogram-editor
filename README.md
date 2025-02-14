@@ -37,11 +37,16 @@ A desktop application for creating and editing retail planograms with 2D visuali
 - ~~Copy, Cut, Paste and~~ Delete Object ✅
 - Multiple Product Size ✅ 
 - Product Properties 👷‍♂️
+  - Set Color ✅ 
+  - Open Product Properties
+  - Add Depth 
 - Select Products Behaviour 
   - Double clicking will show properties
   - When click will select object within same type/subcategory
   - Blink-ing objets
-- Add bottom bar to show info 
+- Layout
+  - Add right section for properties
+  - Add bottom bar to show info 
 
 ## 📦 Installation
 

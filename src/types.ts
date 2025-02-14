@@ -46,6 +46,7 @@ export interface Product {
   y: number
   width: number
   height: number
+  depth: number
   sectionId?: string | null
   shelfId?: string | null
   relativeX?: number
