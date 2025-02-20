@@ -3,6 +3,7 @@ const require$$3 = require("electron");
 const path = require("path");
 const vendor = require("./vendor-aKxZ_xpE.js");
 vendor.mainExports.initialize();
+require$$3.app.commandLine.appendSwitch("disable-features", "AutofillServerCommunication");
 function createWindow() {
   const win = new require$$3.BrowserWindow({
     width: 1200,
@@ -10,7 +11,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      enableRemoteModule: true
+      spellcheck: false
     }
   });
   if (process.env.VITE_DEV_SERVER_URL) {

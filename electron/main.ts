@@ -4,6 +4,9 @@ import { initialize, enable } from '@electron/remote/main'
 
 initialize()
 
+// Disable autofill
+app.commandLine.appendSwitch('disable-features', 'AutofillServerCommunication')
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -11,7 +14,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      enableRemoteModule: true
+      spellcheck: false
     }
   })
 
