@@ -6,19 +6,36 @@ import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [
-    vue(),
+    vue({
+      template: {
+        compilerOptions: {
+          isCustomElement: tag => ['Stage','Layer','Circle','Group','Rect','Text','Line'].includes(tag)
+        }
+      }
+    }),
     electron([
       {
         entry: 'electron/main.ts',
         vite: {
           build: {
             outDir: 'dist-electron',
+            rollupOptions: {
+              output: {
+                manualChunks: (id) => {
+                  if (id.includes('node_modules')) return 'vendor'
+                }
+              }
+            }
           },
         },
       },
     ]),
     renderer(),
   ],
+  build: {
+    chunkSizeWarningLimit: 1600,
+    sourcemap: process.env.NODE_ENV !== 'production'
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
