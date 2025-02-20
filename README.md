@@ -1,6 +1,7 @@
 # Planogram Editor
 
 ![Planogram Editor Screenshot](./screenshoot.png)
+![Planogram Editor 3D View](./screenshoot3D.png)
 
 A desktop application for creating and editing retail planograms with 2D visualization capabilities.
 
@@ -13,6 +14,8 @@ A desktop application for creating and editing retail planograms with 2D visuali
 - **2D Visualization**:
   - Konva.js (Canvas rendering)
   - Vue-Konva (Vue integration)
+- **3D View**:
+  - Three.js
 - **State Management**:
   - Pinia (Vue store)
 - **Build Tools**:
@@ -47,6 +50,7 @@ A desktop application for creating and editing retail planograms with 2D visuali
 - Layout
   - Add right section for properties
   - Add bottom bar to show info 
+- 3D View 👷‍♂️
 
 ## 📦 Installation
 
