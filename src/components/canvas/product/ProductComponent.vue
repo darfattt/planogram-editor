@@ -9,6 +9,7 @@
       type: product.type,
       height: product.height,
       width: product.width,
+      depth: product.depth,
       code: product.code,
       color: product.color
     }"

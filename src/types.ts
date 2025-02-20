@@ -31,9 +31,10 @@ export interface Shelf {
   y: number
   width: number
   height: number
+  depth?: number
   sectionId?: string | null
-  relativeX?: number
-  relativeY?: number
+  relativeX?: number | 0
+  relativeY?: number | 0
   category: string
   subCategory: string
   // Add other shelf properties as needed
@@ -46,6 +47,7 @@ export interface Product {
   y: number
   width: number
   height: number
+  depth: number
   sectionId?: string | null
   shelfId?: string | null
   relativeX?: number
