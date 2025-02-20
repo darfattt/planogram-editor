@@ -7,6 +7,9 @@
         <button @click="showProductImages = !showProductImages">
           {{ showProductImages ? 'Hide' : 'Show' }} Images
         </button>
+        <button @click="toggleViewMode">
+          {{ is3DMode ? '2D View' : '3D View' }}
+        </button>
       </div>
       <div class="template-section">
         <h3>Fixtures Template</h3>
@@ -22,11 +25,16 @@
     </div>
     <div class="workspace">
       <EditorCanvas 
+        v-if="!is3DMode"
         ref="editorCanvasRef"
         @drop="handleDrop" 
         @dragover.prevent="handleDragOver"
         class="editor-canvas"
         :key="canvasKey"
+      />
+      <ThreeDViewer
+        v-else
+        class="three-d-viewer"
       />
     </div>
   </div>
@@ -37,6 +45,7 @@ import { defineComponent, ref, onMounted } from 'vue'
 import FixtureTemplate from './templates/FixtureTemplate.vue'
 import ProductTemplate from './templates/ProductTemplate.vue'
 import EditorCanvas from './canvas/EditorCanvas.vue'
+import ThreeDViewer from './canvas/ThreeDViewer.vue'
 import type { DraggedItem, Product, Section, Shelf } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import Konva from 'konva'
@@ -48,7 +57,8 @@ export default defineComponent({
   components: {
     FixtureTemplate,
     ProductTemplate,
-    EditorCanvas
+    EditorCanvas,
+    ThreeDViewer
   },
   setup() {
     console.log('PlanogramEditor setup');
@@ -60,6 +70,7 @@ export default defineComponent({
     const { sections, shelves, products, showProductImages } = storeToRefs(store)
     const editorCanvasRef = ref<InstanceType<typeof EditorCanvas> | null>(null)
     const canvasKey = ref(0)
+    const is3DMode = ref(false)
 
     // Initialize with test data only if no data exists
     onMounted(() => {
@@ -67,6 +78,10 @@ export default defineComponent({
         //initializeTestData()
       }
     })
+
+    const toggleViewMode = () => {
+      is3DMode.value = !is3DMode.value
+    }
 
     const handleDragStart = (item: DraggedItem) => {
       draggedItem.value = item
@@ -110,15 +125,16 @@ export default defineComponent({
 
     const handleAddProduct = (item: DraggedItem) => {
       if (item.type === 'product') {
-        const product = {
+        addProduct({
           x: 100,
           y: 100,
           width: item.properties.width,
           height: item.properties.height,
+          depth: 50, // Default depth for products
           type: 'default',
-          category: 'product'
-        }
-        addProduct(product)
+          color: '#4444ff',
+          code: 'default'
+        })
       }
     }
 
@@ -230,7 +246,9 @@ export default defineComponent({
       handleLoad,
       editorCanvasRef,
       canvasKey,
-      showProductImages
+      showProductImages,
+      is3DMode,
+      toggleViewMode
     }
   }
 })
@@ -289,5 +307,12 @@ export default defineComponent({
   flex: 1;
   background-color: #fff;
   overflow: hidden;
+  position: relative;
+}
+
+.editor-canvas,
+.three-d-viewer {
+  width: 100%;
+  height: 100%;
 }
 </style>
