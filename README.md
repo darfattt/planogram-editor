@@ -42,7 +42,7 @@ A desktop application for creating and editing retail planograms with 2D visuali
 - Product Properties 👷‍♂️
   - Set Color ✅ 
   - Open Product Properties
-  - Add Depth 
+  - Add Depth 👷‍♂️
 - Select Products Behaviour 
   - Double clicking will show properties
   - When click will select object within same type/subcategory
@@ -51,6 +51,9 @@ A desktop application for creating and editing retail planograms with 2D visuali
   - Add right section for properties
   - Add bottom bar to show info 
 - 3D View 👷‍♂️
+- Framework 
+  - Vite enhancement ✅
+  - Pinia enhancement
 
 ## 📦 Installation
 
