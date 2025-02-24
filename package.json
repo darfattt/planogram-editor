@@ -4,11 +4,12 @@
   "version": "0.0.0",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc && vite build",
+    "dev": "vite --mode development",
+    "build:dev": "vue-tsc && vite build --mode development",
+    "build:prod": "vue-tsc && vite build --mode production",
     "preview": "vite preview",
-    "electron:dev": "vite --host & electron .",
-    "electron:build": "vue-tsc && vite build && electron-builder",
+    "electron:dev": "vite --host --mode development & electron .",
+    "electron:build": "npm run build:prod && electron-builder",
     "electron:preview": "electron ."
   },
   "dependencies": {
@@ -29,7 +30,19 @@
   "build": {
     "appId": "com.planogram.editor",
     "directories": {
-      "output": "dist-electron"
+      "output": "release/${version}",
+      "app": "dist-electron"
+    },
+    "files": [
+      "dist-electron/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "asar": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true
     }
   },
   "devDependencies": {

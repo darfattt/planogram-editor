@@ -175,7 +175,7 @@ const createShelf = (shelf: Shelf) => {
   const mesh = new THREE.Mesh(geometry, material)
   
   // Center objects around origin
-  mesh.position.set(relativeX - 200 + width/2, relativeY + height/2, Z_OFFSET.SHELF)
+  mesh.position.set(relativeX? - 200 + width/2 : 0, relativeY? + height/2:0, Z_OFFSET.SHELF)
   mesh.castShadow = true
   mesh.receiveShadow = true
   return mesh
