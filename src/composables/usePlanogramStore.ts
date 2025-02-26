@@ -456,7 +456,8 @@ export const usePlanogramStore = defineStore('planogram', () => {
     x: number
     y: number
     width: number
-    height: number
+    height: number,
+    depth : number,
     sectionId?: string
     relativeX?: number
     relativeY?: number
