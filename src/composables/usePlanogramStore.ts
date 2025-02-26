@@ -57,10 +57,11 @@ export const usePlanogramStore = defineStore('planogram', () => {
       id: "shelf1",
       x: 500,
       y: 550,
-      relativeX: 10,
-      relativeY: 400,
-      width: 380,
+      relativeX: 0,
+      relativeY: 590,
+      width: 400,
       height: 10,
+      depth: 50,
       sectionId: testSection.id,
       category: 'fixtures',
       subCategory: 'shelf'
@@ -69,16 +70,32 @@ export const usePlanogramStore = defineStore('planogram', () => {
       id: "shelf2",
       x: 500,
       y: 550,
-      relativeX: 10,
-      relativeY: 200,
-      width: 380,
+      relativeX: 0,
+      relativeY: 400,
+      width: 400,
       height: 10,
+      depth: 50,
+      sectionId: testSection.id,
+      category: 'fixtures',
+      subCategory: 'shelf'
+    }
+    const testShelf3 = {
+      id: "shelf3",
+      x: 500,
+      y: 550,
+      relativeX: 0,
+      relativeY: 200,
+      width: 400,
+      height: 10,
+      depth: 50,
       sectionId: testSection.id,
       category: 'fixtures',
       subCategory: 'shelf'
     }
     shelves.value.push(testShelf)
     shelves.value.push(testShelf2)
+    shelves.value.push(testShelf3)
+
 
     // Test Product on Shelf
     products.value.push({
@@ -87,43 +104,17 @@ export const usePlanogramStore = defineStore('planogram', () => {
       x: 100,
       y: 100,
       relativeX: 0,
-      relativeY: -51,
+      relativeY: -52,
       width: 50,
       height: 50,
-      depth: 10,
+      depth: 50,
       sectionId: testSection.id,
       shelfId: testShelf.id,
       category: 'product',
       type: 'Food',
       image: '/src/assets/products/pepsi.png',
-      color: 'yellow'
+      color: 'purple'
     })
-
-    // Standalone Product
-    // products.value.push({
-    //   id: 'product2Standalone',
-    //   code: 'cola01',
-    //   x: 400,
-    //   y: 200,
-    //   width: 50,
-    //   height: 50,
-    //   depth: 10,
-    //   category: 'product',
-    //   type: 'Drink',
-    //   image: '/src/assets/products/cola.png'
-    // })
-    // products.value.push({
-    //   id: 'product3',
-    //   code: 'golda01',
-    //   x: 300,
-    //   y: 200,
-    //   width: 50,
-    //   height: 50,
-    //   depth: 10,
-    //   category: 'product',
-    //   type: 'Medicine',
-    //   image: '/src/assets/products/golda.png'
-    // })
   }
 
   const updateShelfPosition = (payload: {
@@ -286,6 +277,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     y: number
     width: number
     height: number
+    depth : number
     sectionId?: string
     relativeX?: number
     relativeY?: number
@@ -296,6 +288,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
       y: payload.y,
       width: payload.width,
       height: payload.height,
+      depth: payload.depth,
       sectionId: payload.sectionId,
       relativeX: payload.relativeX ?? 0,
       relativeY: payload.relativeY ?? 0,
@@ -437,7 +430,8 @@ export const usePlanogramStore = defineStore('planogram', () => {
     x: number
     y: number
     width: number
-    height: number
+    height: number,
+    depth : number,
     sectionId?: string
     relativeX?: number
     relativeY?: number

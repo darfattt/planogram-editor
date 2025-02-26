@@ -27,6 +27,7 @@ export interface ProductDetachData {
 export interface ShelfConfig {
   width: number
   height: number
+  depth: number
   fill: string
   stroke: string
   strokeWidth: number

@@ -34,7 +34,8 @@ export default defineComponent({
         x: 0,
         y: 0,
         width: 400,
-        height: 10
+        height: 10,
+        depth: 50
       })
     }
 

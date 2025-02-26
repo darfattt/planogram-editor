@@ -92,6 +92,7 @@ export default defineComponent({
     const shelfConfig: ShelfConfig = {
       width: props.shelf.width,
       height: props.shelf.height,
+      depth: props.shelf.depth,
       ...SHELF_STYLES,
       sectionId: props.shelf.sectionId
     }

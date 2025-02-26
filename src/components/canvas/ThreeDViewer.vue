@@ -163,7 +163,7 @@ const createSection = (section: Section) => {
 
 // Create shelf mesh
 const createShelf = (shelf: Shelf) => {
-  const { relativeX, relativeY, width, height, depth = 30 } = shelf
+  const { relativeX, relativeY, width, height, depth = 50 } = shelf
   
   const geometry = new THREE.BoxGeometry(width, height, depth)
   const material = new THREE.MeshPhongMaterial({ 
@@ -183,7 +183,8 @@ const createShelf = (shelf: Shelf) => {
 
 // Create product mesh
 const createProduct = (product: Product) => {
-  const { x, y, width, height, depth = 25 } = product
+  console.log({product});
+  const { x, y, width, height, depth } = product
   
   const geometry = new THREE.BoxGeometry(width, height, depth)
   const material = new THREE.MeshPhongMaterial({ 

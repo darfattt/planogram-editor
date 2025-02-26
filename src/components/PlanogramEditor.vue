@@ -188,7 +188,7 @@ export default defineComponent({
 
       // Convert to JSON string
       const jsonString = JSON.stringify(stateData, null, 2)
-      
+      console.log({jsonString});
       // Create blob and download
       const blob = new Blob([jsonString], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
