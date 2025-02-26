@@ -151,8 +151,13 @@ export default defineComponent({
 
       group.x(newX)
       group.y(newY)
-      section.x = newX
-      section.y = newY
+      
+      // Use store method to update section position to ensure history tracking
+      store.updateSectionPosition({
+        id: sectionId,
+        x: newX,
+        y: newY
+      })
     }
 
     const handleProductPositionUpdate = (payload: {
@@ -181,17 +186,9 @@ export default defineComponent({
       
       const group = stageRef.value.getStage().findOne(`#${payload.id}`)
       if (!group) return
-      // Update shelf position
-      if (shelf.sectionId) {
-        const section = sections.value.find((s: Section) => s.id === shelf.sectionId)
-        if (section) {
-          shelf.relativeX = payload.x - section.x
-          shelf.relativeY = payload.y - section.y
-        }
-      } else {
-        shelf.x = payload.x
-        shelf.y = payload.y
-      }
+      
+      // Use store method to update shelf position to ensure history tracking
+      store.updateShelfPosition(payload)
     }
 
     const handleDragOver = (e: KonvaEventObject<DragEvent>) => {
@@ -219,6 +216,7 @@ export default defineComponent({
             y: pos.y - item.properties.height/2,
             width: item.properties.width,
             height: item.properties.height,
+            depth: 50, // Default depth for products
             relativeX: 0,
             relativeY: 0,
           })
@@ -252,9 +250,13 @@ export default defineComponent({
     const convertToStandaloneProduct = (productId: string, x: number, y: number) => {
       const product = products.value.find(p => p.id === productId)
       if (product) {
-        product.shelfId = undefined
-        product.x = x
-        product.y = y
+        // Use store method to update product position to ensure history tracking
+        updateProductPosition({
+          id: productId,
+          x: x,
+          y: y,
+          shelfId: undefined
+        })
       }
     }
 

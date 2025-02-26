@@ -32,7 +32,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+import { defineComponent, type PropType, inject } from 'vue'
 import type { KonvaEventObject, Node } from 'konva/lib/Node'
 import ProductComponent from '../product/ProductComponent.vue'
 import { useDebugStore } from '../../../composables/useDebugStore'
@@ -86,7 +86,7 @@ export default defineComponent({
   emits: ['product-drag', 'product-detach', 'update-position'],
   setup(props, { emit }) {
     const selectionStore = useSelectionStore()
-    const { updateShelfPosition } = usePlanogramStore()
+    const planogramStore = usePlanogramStore()
     const debugStore = useDebugStore()
 
     const shelfConfig: ShelfConfig = {
@@ -126,10 +126,39 @@ export default defineComponent({
         console.log(`Shelf ${props.shelf.id} is inside section ${foundSection.id()}`)
         const positionUpdate = calculateShelfPosition(node, foundSection, pos)
         
-        // Update shelf properties
-        Object.assign(props.shelf, positionUpdate)
+        // Use store method to update shelf position to ensure history tracking
+        planogramStore.updateShelfPosition({
+          id: props.shelf.id,
+          x: positionUpdate.x,
+          y: positionUpdate.y,
+          products: props.products.map(p => ({
+            id: p.id,
+            relativeX: p.relativeX || 0,
+            relativeY: p.relativeY || 0
+          }))
+        })
+        
+        // Update shelf properties for finalizing position
+        planogramStore.finalizeShelfPosition({
+          id: props.shelf.id,
+          x: positionUpdate.x,
+          y: positionUpdate.y,
+          products: props.products
+        })
       } else {
         console.log(`Shelf ${props.shelf.id} is not within any section`)
+        
+        // Update position for standalone shelf
+        planogramStore.updateShelfPosition({
+          id: props.shelf.id,
+          x: pos.x,
+          y: pos.y,
+          products: props.products.map(p => ({
+            id: p.id,
+            relativeX: p.relativeX || 0,
+            relativeY: p.relativeY || 0
+          }))
+        })
       }
     }
 

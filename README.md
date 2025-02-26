@@ -33,7 +33,10 @@ A desktop application for creating and editing retail planograms with 2D visuali
 - Collision detection ✅
 - Debug overlay with coordinate tracking ✅
 - Electron-based desktop deployment ✅
-- Use Shortcut to add facing product (ctrl+shift+arrow) ✅
+- Shortcut to 
+  - add facing product (ctrl+shift+arrow) ✅
+  - ctrl+z to undo product movement and creation ✅
+  - ctrl+z generic undo (for fixtures) 👷‍♂️
 - Load and Save Feature ✅
 - Toggle Live Image ✅
 - Select Node Indicator ✅

@@ -305,6 +305,32 @@ export const usePlanogramStore = defineStore('planogram', () => {
     shelves.value.push(newShelf)
     return newShelf
   }
+  
+  const updateSectionPosition = (payload: {
+    id: string
+    x: number
+    y: number
+  }) => {
+    const section = sections.value.find(s => s.id === payload.id)
+    if (!section) return
+    
+    section.x = payload.x
+    section.y = payload.y
+    
+    // Update positions of shelves within this section
+    const sectionShelves = shelves.value.filter(s => s.sectionId === payload.id)
+    sectionShelves.forEach(shelf => {
+      shelf.x = payload.x + (shelf.relativeX || 0)
+      shelf.y = payload.y + (shelf.relativeY || 0)
+    })
+    
+    // Update positions of products directly in this section
+    const sectionProducts = products.value.filter(p => p.sectionId === payload.id && !p.shelfId)
+    sectionProducts.forEach(product => {
+      product.x = payload.x + (product.relativeX || 0)
+      product.y = payload.y + (product.relativeY || 0)
+    })
+  }
 
   // Save current state to history
   const saveStateToHistory = () => {
@@ -346,6 +372,15 @@ export const usePlanogramStore = defineStore('planogram', () => {
   }
   
   // Create wrapped versions of state-changing methods that save history before changes
+  const wrappedUpdateSectionPosition = (payload: {
+    id: string
+    x: number
+    y: number
+  }) => {
+    saveStateToHistory()
+    return updateSectionPosition(payload)
+  }
+  
   const wrappedAddProduct = (payload: {
     x: number
     y: number
@@ -455,6 +490,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     deleteShelf: wrappedDeleteShelf,
     addSection: wrappedAddSection,
     addShelf: wrappedAddShelf,
+    updateSectionPosition: wrappedUpdateSectionPosition,
     undo // Export the undo function
   }
 })
