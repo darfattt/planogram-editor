@@ -48,11 +48,11 @@
         </ShelfComponent>
     </v-layer>
   </v-stage>
-  <div>
+  <!-- <div>
     <div>Standalone: {{ standaloneProducts.length }}</div>
     <div>Shelf 1: {{ getProductsByShelf('shelf1').length }}</div>
     <div>Shelf 2: {{ getProductsByShelf('shelf2').length }}</div>
-  </div>
+  </div> -->
 </template>
 
 <script lang="ts">
@@ -219,6 +219,7 @@ export default defineComponent({
             y: pos.y - item.properties.height/2,
             width: item.properties.width,
             height: item.properties.height,
+            depth: item.properties.depth,
             relativeX: 0,
             relativeY: 0,
           })
