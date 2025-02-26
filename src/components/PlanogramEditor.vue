@@ -1,9 +1,14 @@
 <template>
   <div class="planogram-editor">
+    <!-- Undo notification -->
+    <div class="undo-notification" v-if="showUndoNotification">
+      Action undone
+    </div>
     <div class="templates">
       <div class="toolbar">
         <button @click="handleSave">Save</button>
         <button @click="handleLoad">Load</button>
+        <button @click="handleUndo" title="Undo (Ctrl+Z)">Undo</button>
         <button @click="showProductImages = !showProductImages">
           {{ showProductImages ? 'Hide' : 'Show' }} Images
         </button>
@@ -41,7 +46,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted } from 'vue'
+import { defineComponent, ref, onMounted, onBeforeUnmount } from 'vue'
 import FixtureTemplate from './templates/FixtureTemplate.vue'
 import ProductTemplate from './templates/ProductTemplate.vue'
 import EditorCanvas from './canvas/EditorCanvas.vue'
@@ -71,13 +76,47 @@ export default defineComponent({
     const editorCanvasRef = ref<InstanceType<typeof EditorCanvas> | null>(null)
     const canvasKey = ref(0)
     const is3DMode = ref(false)
+    const showUndoNotification = ref(false)
 
     // Initialize with test data only if no data exists
     onMounted(() => {
       if (sections.value.length === 0) {
         //initializeTestData()
       }
+      
+      // Add keyboard event listener for Ctrl+Z (undo)
+      window.addEventListener('keydown', handleKeyDown)
     })
+    
+    // Remove event listener when component is unmounted
+    onBeforeUnmount(() => {
+      window.removeEventListener('keydown', handleKeyDown)
+    })
+    
+    // Handle undo action
+    const handleUndo = () => {
+      const undoSuccessful = store.undo()
+      console.log('Undo action triggered', undoSuccessful ? 'successfully' : 'but no history available')
+      
+      if (undoSuccessful) {
+        // Show notification
+        showUndoNotification.value = true
+        
+        // Hide notification after 2 seconds
+        setTimeout(() => {
+          showUndoNotification.value = false
+        }, 2000)
+      }
+    }
+    
+    // Handle keyboard shortcuts
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl+Z (undo)
+      if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault() // Prevent browser's default undo
+        handleUndo()
+      }
+    }
 
     const toggleViewMode = () => {
       is3DMode.value = !is3DMode.value
@@ -244,11 +283,13 @@ export default defineComponent({
       handleAddProduct,
       handleSave,
       handleLoad,
+      handleUndo,
       editorCanvasRef,
       canvasKey,
       showProductImages,
       is3DMode,
-      toggleViewMode
+      toggleViewMode,
+      showUndoNotification
     }
   }
 })
@@ -314,5 +355,28 @@ export default defineComponent({
 .three-d-viewer {
   width: 100%;
   height: 100%;
+}
+
+.undo-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 </style>
