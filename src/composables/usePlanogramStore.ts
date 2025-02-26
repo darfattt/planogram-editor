@@ -3,11 +3,22 @@ import { ref, computed } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 import type { Section, Shelf, Product } from '../types'
 
+// Define a type for the state history
+interface PlanogramState {
+  sections: Section[]
+  shelves: Shelf[]
+  products: Product[]
+}
+
 export const usePlanogramStore = defineStore('planogram', () => {
   const sections = ref<Section[]>([])
   const shelves = ref<Shelf[]>([])
   const products = ref<Product[]>([])
   const showProductImages = ref(true)
+  
+  // Add history tracking
+  const history = ref<PlanogramState[]>([])
+  const maxHistoryLength = 20 // Limit history to prevent memory issues
 
   // Keep the computed properties inside the function
   const standaloneProducts = computed(() => 
@@ -294,6 +305,170 @@ export const usePlanogramStore = defineStore('planogram', () => {
     shelves.value.push(newShelf)
     return newShelf
   }
+  
+  const updateSectionPosition = (payload: {
+    id: string
+    x: number
+    y: number
+  }) => {
+    const section = sections.value.find(s => s.id === payload.id)
+    if (!section) return
+    
+    section.x = payload.x
+    section.y = payload.y
+    
+    // Update positions of shelves within this section
+    const sectionShelves = shelves.value.filter(s => s.sectionId === payload.id)
+    sectionShelves.forEach(shelf => {
+      shelf.x = payload.x + (shelf.relativeX || 0)
+      shelf.y = payload.y + (shelf.relativeY || 0)
+    })
+    
+    // Update positions of products directly in this section
+    const sectionProducts = products.value.filter(p => p.sectionId === payload.id && !p.shelfId)
+    sectionProducts.forEach(product => {
+      product.x = payload.x + (product.relativeX || 0)
+      product.y = payload.y + (product.relativeY || 0)
+    })
+  }
+
+  // Save current state to history
+  const saveStateToHistory = () => {
+    // Create a deep copy of the current state
+    const currentState: PlanogramState = {
+      sections: JSON.parse(JSON.stringify(sections.value)),
+      shelves: JSON.parse(JSON.stringify(shelves.value)),
+      products: JSON.parse(JSON.stringify(products.value))
+    }
+    
+    // Add to history
+    history.value.push(currentState)
+    
+    // Limit history length
+    if (history.value.length > maxHistoryLength) {
+      history.value.shift() // Remove oldest state
+    }
+  }
+  
+  // Undo the last action
+  const undo = () => {
+    if (history.value.length === 0) {
+      console.log('No actions to undo')
+      return false
+    }
+    
+    // Get the previous state
+    const previousState = history.value.pop()
+    
+    if (previousState) {
+      // Restore the previous state
+      sections.value = previousState.sections
+      shelves.value = previousState.shelves
+      products.value = previousState.products
+      return true
+    }
+    
+    return false
+  }
+  
+  // Create wrapped versions of state-changing methods that save history before changes
+  const wrappedUpdateSectionPosition = (payload: {
+    id: string
+    x: number
+    y: number
+  }) => {
+    saveStateToHistory()
+    return updateSectionPosition(payload)
+  }
+  
+  const wrappedAddProduct = (payload: {
+    x: number
+    y: number
+    width: number
+    height: number
+    depth: number
+    color?: string
+    shelfId?: string
+    sectionId?: string
+    relativeX?: number
+    relativeY?: number
+    type?: string
+    image?: string
+    code?: string
+  }) => {
+    saveStateToHistory()
+    return addProduct(payload)
+  }
+  
+  const wrappedUpdateProductPosition = (payload: {
+    id: string
+    x: number
+    y: number
+    relativeX?: number
+    relativeY?: number
+    shelfId?: string
+    sectionId?: string,
+  }) => {
+    saveStateToHistory()
+    return updateProductPosition(payload)
+  }
+  
+  const wrappedDeleteProduct = (productId: string) => {
+    saveStateToHistory()
+    return deleteProduct(productId)
+  }
+  
+  const wrappedDeleteShelf = (shelfId: string) => {
+    saveStateToHistory()
+    return deleteShelf(shelfId)
+  }
+  
+  const wrappedAddSection = (payload: {
+    x: number
+    y: number
+    width: number
+    height: number
+  }) => {
+    saveStateToHistory()
+    return addSection(payload)
+  }
+  
+  const wrappedAddShelf = (payload: {
+    x: number
+    y: number
+    width: number
+    height: number
+    sectionId?: string
+    relativeX?: number
+    relativeY?: number
+  }) => {
+    saveStateToHistory()
+    return addShelf(payload)
+  }
+  
+  const wrappedUpdateShelfPosition = (payload: {
+    id: string
+    x: number
+    y: number
+    products: Array<{
+      id: string
+      relativeX: number
+      relativeY: number
+    }>
+  }) => {
+    saveStateToHistory()
+    return updateShelfPosition(payload)
+  }
+  
+  const wrappedFinalizeShelfPosition = (payload: {
+    id: string
+    x: number
+    y: number
+    products: Product[]
+  }) => {
+    saveStateToHistory()
+    return finalizeShelfPosition(payload)
+  }
 
   return {
     sections,
@@ -306,13 +481,16 @@ export const usePlanogramStore = defineStore('planogram', () => {
     getProductsBySection,
     getProductsByShelf,
     initializeTestData,
-    updateShelfPosition,
-    finalizeShelfPosition,
-    addProduct,
-    updateProductPosition,
-    deleteProduct,
-    deleteShelf,
-    addSection,
-    addShelf
+    // Return wrapped functions instead of originals
+    updateShelfPosition: wrappedUpdateShelfPosition,
+    finalizeShelfPosition: wrappedFinalizeShelfPosition,
+    addProduct: wrappedAddProduct,
+    updateProductPosition: wrappedUpdateProductPosition,
+    deleteProduct: wrappedDeleteProduct,
+    deleteShelf: wrappedDeleteShelf,
+    addSection: wrappedAddSection,
+    addShelf: wrappedAddShelf,
+    updateSectionPosition: wrappedUpdateSectionPosition,
+    undo // Export the undo function
   }
 })
