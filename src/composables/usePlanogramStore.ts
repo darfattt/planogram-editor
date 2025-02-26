@@ -107,40 +107,14 @@ export const usePlanogramStore = defineStore('planogram', () => {
       relativeY: -52,
       width: 50,
       height: 50,
-      depth: 10,
+      depth: 50,
       sectionId: testSection.id,
       shelfId: testShelf.id,
       category: 'product',
       type: 'Food',
       image: '/src/assets/products/pepsi.png',
-      color: 'yellow'
+      color: 'purple'
     })
-
-    // Standalone Product
-    // products.value.push({
-    //   id: 'product2Standalone',
-    //   code: 'cola01',
-    //   x: 400,
-    //   y: 200,
-    //   width: 50,
-    //   height: 50,
-    //   depth: 10,
-    //   category: 'product',
-    //   type: 'Drink',
-    //   image: '/src/assets/products/cola.png'
-    // })
-    // products.value.push({
-    //   id: 'product3',
-    //   code: 'golda01',
-    //   x: 300,
-    //   y: 200,
-    //   width: 50,
-    //   height: 50,
-    //   depth: 10,
-    //   category: 'product',
-    //   type: 'Medicine',
-    //   image: '/src/assets/products/golda.png'
-    // })
   }
 
   const updateShelfPosition = (payload: {
