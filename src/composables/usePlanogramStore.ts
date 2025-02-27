@@ -64,7 +64,8 @@ export const usePlanogramStore = defineStore('planogram', () => {
       depth: 50,
       sectionId: testSection.id,
       category: 'fixtures',
-      subCategory: 'shelf'
+      subCategory: 'shelf',
+      strictPlacement: true // Enable strict placement for this shelf
     }
     const testShelf2 = {
       id: "shelf2",
@@ -77,7 +78,8 @@ export const usePlanogramStore = defineStore('planogram', () => {
       depth: 50,
       sectionId: testSection.id,
       category: 'fixtures',
-      subCategory: 'shelf'
+      subCategory: 'shelf',
+      strictPlacement: true // Enable strict placement for this shelf
     }
     const testShelf3 = {
       id: "shelf3",
@@ -90,7 +92,8 @@ export const usePlanogramStore = defineStore('planogram', () => {
       depth: 50,
       sectionId: testSection.id,
       category: 'fixtures',
-      subCategory: 'shelf'
+      subCategory: 'shelf',
+      strictPlacement: false // Disable strict placement for this shelf (for comparison)
     }
     shelves.value.push(testShelf)
     shelves.value.push(testShelf2)
@@ -281,6 +284,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     sectionId?: string
     relativeX?: number
     relativeY?: number
+    strictPlacement?: boolean
   }) => {
     const newShelf: Shelf = {
       id: uuidv4(),
@@ -293,7 +297,8 @@ export const usePlanogramStore = defineStore('planogram', () => {
       relativeX: payload.relativeX ?? 0,
       relativeY: payload.relativeY ?? 0,
       category: 'fixtures',
-      subCategory: 'shelf'
+      subCategory: 'shelf',
+      strictPlacement: payload.strictPlacement
     }
     shelves.value.push(newShelf)
     return newShelf
@@ -435,6 +440,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     sectionId?: string
     relativeX?: number
     relativeY?: number
+    strictPlacement?: boolean
   }) => {
     saveStateToHistory()
     return addShelf(payload)

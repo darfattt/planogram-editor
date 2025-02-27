@@ -7,7 +7,8 @@ import {
   ATTR_X,
   ATTR_Y,
   ATTR_ID,
-  ATTR_SECTION_ID
+  ATTR_SECTION_ID,
+  ATTR_CATEGORY
 } from '../../shared/constants'
 
 export function getShelfPositionData(
@@ -18,6 +19,47 @@ export function getShelfPositionData(
   const shelfPos = shelf.getAbsolutePosition()
   const shelfData = shelf.getAttr(ATTR_SHELF_DATA)
   
+  // Check if strict placement is enabled
+  if (shelfData.strictPlacement) {
+    // Get all products on this shelf
+    const productsOnShelf = shelf.getChildren(child => 
+      child.getAttr(ATTR_CATEGORY)?.toLowerCase() === 'product'
+    )
+    
+    if (productsOnShelf.length === 0) {
+      // If shelf is empty, place at the very left
+      return {
+        relativeX: 0, // Left edge
+        relativeY: (- productHeight) - Y_OFFSET_PRODUCT_ON_TOP_OF_SHELF,
+        shelfPos,
+        shelfData
+      }
+    } else {
+      // Find the rightmost product
+      let rightmostX = 0
+      let rightmostWidth = 0
+      
+      productsOnShelf.forEach(product => {
+        const productX = product.getAttr(ATTR_X)
+        const productWidth = product.getAttr('width')
+        
+        if (productX + productWidth > rightmostX + rightmostWidth) {
+          rightmostX = productX
+          rightmostWidth = productWidth
+        }
+      })
+      
+      // Place beside the rightmost product
+      return {
+        relativeX: rightmostX + rightmostWidth,
+        relativeY: (- productHeight) - Y_OFFSET_PRODUCT_ON_TOP_OF_SHELF,
+        shelfPos,
+        shelfData
+      }
+    }
+  }
+  
+  // Default behavior if strict placement is not enabled
   return {
     relativeX: absolutePos.x - shelfPos.x,
     relativeY: (- productHeight) - Y_OFFSET_PRODUCT_ON_TOP_OF_SHELF,

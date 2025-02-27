@@ -34,6 +34,7 @@ export interface ShelfConfig {
   category: string
   subCategory: string
   sectionId: string | null | undefined
+  strictPlacement?: boolean
 }
 
 export interface ShelfPosition {
