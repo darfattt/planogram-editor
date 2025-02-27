@@ -18,3 +18,4 @@ export const DEFAULT_STYLES = {
 
 export const COLLISION_ADJUSTMENT = 10
 export const Y_OFFSET_PRODUCT_ON_TOP_OF_SHELF = 1
+export const REORG_PRODUCT_ON_SHELF = true

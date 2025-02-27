@@ -1,6 +1,6 @@
 import type { Node } from 'konva/lib/Node'
 import type { Group } from 'konva/lib/Group'
-import { Y_OFFSET_PRODUCT_ON_TOP_OF_SHELF } from '../constants'
+import { REORG_PRODUCT_ON_SHELF, Y_OFFSET_PRODUCT_ON_TOP_OF_SHELF } from '../constants'
 import type { ShelfPositionData, ProductPositionData, PositionData } from '../product-model'
 import {
   ATTR_SHELF_DATA,
@@ -8,8 +8,53 @@ import {
   ATTR_Y,
   ATTR_ID,
   ATTR_SECTION_ID,
-  ATTR_CATEGORY
+  ATTR_CATEGORY,
+  ATTR_WIDTH
 } from '../../shared/constants'
+
+/**
+ * Reorganizes products on a shelf with strict placement after a product is removed
+ * Shifts all products to the left to fill any gaps
+ */
+export function reorganizeProductsOnShelf(shelf: Group, removedProductId?: string): void {
+  const shelfData = shelf.getAttr(ATTR_SHELF_DATA)
+  
+  // Only proceed if strict placement is enabled
+  if (!shelfData.strictPlacement) {
+    return
+  }
+  
+  // Get all products on this shelf
+  const productsOnShelf = shelf.getChildren(child => 
+    child.getAttr(ATTR_CATEGORY)?.toLowerCase() === 'product'
+  )
+  
+  if (productsOnShelf.length === 0) {
+    return // No products to reorganize
+  }
+  
+  // Sort products by their X position (left to right)
+  const sortedProducts = [...productsOnShelf].sort((a, b) => {
+    return a.getAttr(ATTR_X) - b.getAttr(ATTR_X)
+  })
+  
+  // Start positioning from the left edge
+  let currentX = 0
+  
+  // Reposition each product
+  sortedProducts.forEach(product => {
+    // Skip the product being removed (if specified)
+    if (removedProductId && product.id() === removedProductId) {
+      return
+    }
+    
+    // Move the product to its new position
+    product.setAttr(ATTR_X, currentX)
+    
+    // Update currentX for the next product
+    currentX += product.getAttr(ATTR_WIDTH)
+  })
+}
 
 export function getShelfPositionData(
   shelf: Group,
@@ -41,7 +86,7 @@ export function getShelfPositionData(
       
       productsOnShelf.forEach(product => {
         const productX = product.getAttr(ATTR_X)
-        const productWidth = product.getAttr('width')
+        const productWidth = product.getAttr(ATTR_WIDTH)
         
         if (productX + productWidth > rightmostX + rightmostWidth) {
           rightmostX = productX
@@ -91,12 +136,23 @@ export function calculatePositionData(
   productGap: number,
   originalPosition: { x: number; y: number }
 ): PositionData {
+  // Store original parent to check if product is being moved from one shelf to another
+  const originalParent = node.getParent();
+  const originalShelfData = originalParent?.getAttr?.(ATTR_SHELF_DATA);
+  const isMovingFromShelf = originalShelfData && originalShelfData.strictPlacement && REORG_PRODUCT_ON_SHELF;
+  
   if (targetShelf) {
     const positionData = getShelfPositionData(targetShelf, absolutePos, productHeight);
     const group = node as unknown as Group;
+    
+    // If moving from a shelf with strict placement, reorganize the original shelf
+    if (isMovingFromShelf && originalParent !== targetShelf) {
+      reorganizeProductsOnShelf(originalParent as Group, node.id());
+    }
+    
     group.moveTo(targetShelf);
-    //targetShelf.add(node);
     node.position({ x: positionData.relativeX, y: positionData.relativeY });
+    
     return {
       x: absolutePos.x,
       y: absolutePos.y,
@@ -125,6 +181,11 @@ export function calculatePositionData(
     };
   }
 
+  // If moving from a shelf with strict placement but not to another shelf or product
+  if (isMovingFromShelf) {
+    reorganizeProductsOnShelf(originalParent as Group, node.id());
+  }
+  
   node.position(originalPosition)
   return {
     ...originalPosition,

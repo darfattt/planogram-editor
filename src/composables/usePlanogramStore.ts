@@ -101,23 +101,23 @@ export const usePlanogramStore = defineStore('planogram', () => {
 
 
     // Test Product on Shelf
-    products.value.push({
-      id: 'product1OnShelfe',
-      code: 'pepsi01',
-      x: 100,
-      y: 100,
-      relativeX: 0,
-      relativeY: -52,
-      width: 50,
-      height: 50,
-      depth: 50,
-      sectionId: testSection.id,
-      shelfId: testShelf.id,
-      category: 'product',
-      type: 'Food',
-      image: '/src/assets/products/pepsi.png',
-      color: 'purple'
-    })
+    // products.value.push({
+    //   id: 'product1OnShelfe',
+    //   code: 'pepsi01',
+    //   x: 100,
+    //   y: 100,
+    //   relativeX: 0,
+    //   relativeY: -52,
+    //   width: 50,
+    //   height: 50,
+    //   depth: 50,
+    //   sectionId: testSection.id,
+    //   shelfId: testShelf.id,
+    //   category: 'product',
+    //   type: 'Food',
+    //   image: '/src/assets/products/pepsi.png',
+    //   color: 'purple'
+    // })
   }
 
   const updateShelfPosition = (payload: {
