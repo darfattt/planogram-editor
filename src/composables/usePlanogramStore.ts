@@ -93,7 +93,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
       sectionId: testSection.id,
       category: 'fixtures',
       subCategory: 'shelf',
-      strictPlacement: false // Disable strict placement for this shelf (for comparison)
+      strictPlacement: true // Disable strict placement for this shelf (for comparison)
     }
     shelves.value.push(testShelf)
     shelves.value.push(testShelf2)
