@@ -10,7 +10,10 @@
       width: shelf.width,
       height: shelf.height,
       sectionId: shelf.sectionId? shelf.sectionId : null,
-      shelfData: shelf
+      shelfData: {
+        ...shelf,
+        strictPlacement: shelf.strictPlacement
+      }
     }"
     @dragmove="handleDragMove"
     @dragend="handleDragEnd"
@@ -94,7 +97,8 @@ export default defineComponent({
       height: props.shelf.height,
       depth: props.shelf.depth,
       ...SHELF_STYLES,
-      sectionId: props.shelf.sectionId
+      sectionId: props.shelf.sectionId,
+      strictPlacement: props.shelf.strictPlacement
     }
 
     const handleDragMove = (e: KonvaEventObject<DragEvent>) => {

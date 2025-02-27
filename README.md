@@ -57,6 +57,7 @@ A desktop application for creating and editing retail planograms with 2D visuali
 - Framework 
   - Vite enhancement ✅
   - Pinia enhancement
+- Rearrange and strict product placement ✅
 
 ## 📦 Installation
 

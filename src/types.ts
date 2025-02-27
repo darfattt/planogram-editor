@@ -38,6 +38,7 @@ export interface Shelf {
   relativeY?: number | 0
   category: string
   subCategory: string
+  strictPlacement?: boolean
   // Add other shelf properties as needed
 }
 

@@ -10,7 +10,7 @@ export function useSelectionStore() {
   const store = usePlanogramStore()
   const { products, shelves } = storeToRefs(store)
   const { addProduct, deleteProduct, deleteShelf } = store
-  const productGap = 3; // product gap when product dropped on top other product and also during copied
+  const productGap = 1; // product gap when product dropped on top other product and also during copied
 
   
   const duplicateProductToRight = (productId: string) => {
