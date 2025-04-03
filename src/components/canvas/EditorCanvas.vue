@@ -94,8 +94,10 @@ export default defineComponent({
       }
     }
 
-    // Initialize test data on component mount
-    initializeTestData()
+    // Initialize test data only if no data exists
+    if (sections.value.length === 0) {
+      initializeTestData()
+    }
 
     // Add cache map at the top of setup
     const shelfPositionCache = new Map<string, { x: number; y: number }>()
