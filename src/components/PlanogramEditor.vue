@@ -169,7 +169,7 @@ export default defineComponent({
           y: 100,
           width: item.properties.width,
           height: item.properties.height,
-          depth: 50, // Default depth for products
+          depth: 30, // Default depth for products
           type: 'default',
           color: '#4444ff',
           code: 'default'

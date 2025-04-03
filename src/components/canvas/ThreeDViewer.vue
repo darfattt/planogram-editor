@@ -135,8 +135,8 @@ const animate = () => {
 const Z_OFFSET = {
   WALL: -450,
   SECTION: -405,     // Sections at the back
-  SHELF: -320,       // Shelves in front of sections
-  PRODUCT: -320      // Products in front of shelves
+  SHELF: -390,       // Shelves closer to sections (partially embedded)
+  PRODUCT: -370      // Products in front of shelves
 }
 
 // Coordinate transformation from 2D to 3D
@@ -171,7 +171,7 @@ const transformCoordinates = (x: number, y: number, width: number, height: numbe
 // Create section mesh
 const createSection = (section: Section) => {
   const { x, y, width, height } = section
-  const depth = 80 // Standard depth for sections
+  const depth = 2 // Standard depth for sections
   
   const geometry = new THREE.BoxGeometry(width, height, depth)
   const material = new THREE.MeshPhongMaterial({ 
@@ -222,6 +222,13 @@ const createShelf = (shelf: Shelf) => {
   
   // Transform coordinates from 2D to 3D
   const position = transformCoordinates(shelfX, shelfY, width, height, Z_OFFSET.SHELF);
+  
+  // If shelf is in a section, adjust Z position to embed it into the section
+  if (sectionId) {
+    // Adjust Z position to embed shelf into section by the section depth
+    position.z += 10; // Move shelf into the section by section depth (10)
+  }
+  
   mesh.position.set(position.x, position.y, position.z);
   
   // Add name for debugging
@@ -276,6 +283,16 @@ const createProduct = (product: Product) => {
   
   // Transform coordinates from 2D to 3D
   const position = transformCoordinates(productX, productY, width, height, Z_OFFSET.PRODUCT);
+  
+  // If product is on a shelf, adjust Z position to place it slightly in front of the shelf
+  if (shelfId) {
+    // Adjust Z position to place product slightly in front of shelf
+    position.z -= 5; // Move product slightly in front of shelf
+  } else if (sectionId) {
+    // If product is directly in a section, embed it by the section depth
+    position.z += 10; // Move product into the section by section depth (10)
+  }
+  
   mesh.position.set(position.x, position.y, position.z);
   
   // Add name for debugging
