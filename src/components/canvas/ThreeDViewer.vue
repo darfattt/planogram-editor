@@ -30,8 +30,8 @@ const initThreeJs = () => {
   const width = container.value.clientWidth
   const height = container.value.clientHeight
   camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 2000)
-  camera.position.set(400, 300, 600)
-  camera.lookAt(150, 150, 0)
+  camera.position.set(0, 300, 600) // Position camera to look at center of scene
+  camera.lookAt(0, 150, 0) // Look at center of scene
 
   // Create renderer
   renderer = new THREE.WebGLRenderer({ antialias: true })
@@ -77,7 +77,7 @@ const initThreeJs = () => {
   controls = new OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true
   controls.dampingFactor = 0.05
-  controls.target.set(150, 150, 0)
+  controls.target.set(0, 150, 0) // Set orbit target to center of scene
   controls.minDistance = 300
   controls.maxDistance = 1200
   controls.maxPolarAngle = Math.PI / 2
@@ -99,7 +99,7 @@ const initThreeJs = () => {
   // Add back wall
   const wallGeometry = new THREE.PlaneGeometry(1000, 500)
   const wallMaterial = new THREE.MeshPhongMaterial({ 
-    color: 0x00FF00,
+    color: 0xE0E0E0, // Light gray color for the wall
     side: THREE.DoubleSide,
     shininess: 0
   })
@@ -139,6 +139,30 @@ const Z_OFFSET = {
   PRODUCT: -320      // Products in front of shelves
 }
 
+// Coordinate transformation from 2D to 3D
+// In 2D, (0,0) is top-left, in 3D we want (0,0) to be center of the scene
+const transformCoordinates = (x: number, y: number, width: number, height: number, zOffset: number) => {
+  // Get the viewport dimensions from the stage config in EditorCanvas
+  // These should match the canvas dimensions used in the 2D view
+  const viewportWidth = window.innerWidth - 250; // Same as stageConfig.width in EditorCanvas
+  const viewportHeight = window.innerHeight - 60; // Same as stageConfig.height in EditorCanvas
+  
+  // Calculate the center of the viewport
+  const viewportCenterX = viewportWidth / 2;
+  const viewportCenterY = viewportHeight / 2;
+  
+  // Calculate object center in 2D coordinates
+  const objectCenterX = x + width / 2;
+  const objectCenterY = y + height / 2;
+  
+  // Transform to 3D coordinates (centered around origin)
+  const centerX = objectCenterX - viewportCenterX;
+  const centerY = viewportCenterY - objectCenterY; // Invert Y axis (2D Y increases downward, 3D Y increases upward)
+  const centerZ = zOffset;
+  
+  return { x: centerX, y: centerY, z: centerZ };
+}
+
 // Create section mesh
 const createSection = (section: Section) => {
   const { x, y, width, height } = section
@@ -153,9 +177,12 @@ const createSection = (section: Section) => {
   })
   const mesh = new THREE.Mesh(geometry, material)
   
-  // Center objects around origin
-  //mesh.position.set(x - 100 + width/2, y + height/2, Z_OFFSET.SECTION)
-  mesh.position.set(0, 250, Z_OFFSET.SECTION)
+  // Transform coordinates from 2D to 3D
+  const position = transformCoordinates(x, y, width, height, Z_OFFSET.SECTION);
+  mesh.position.set(position.x, position.y, position.z);
+  
+  // Add name for debugging
+  mesh.name = `section-${section.id}`;
   mesh.castShadow = true
   mesh.receiveShadow = true
   return mesh
@@ -163,7 +190,7 @@ const createSection = (section: Section) => {
 
 // Create shelf mesh
 const createShelf = (shelf: Shelf) => {
-  const { relativeX, relativeY, width, height, depth = 50 } = shelf
+  const { x, y, width, height, depth = 50, sectionId, relativeX, relativeY } = shelf
   
   const geometry = new THREE.BoxGeometry(width, height, depth)
   const material = new THREE.MeshPhongMaterial({ 
@@ -174,8 +201,26 @@ const createShelf = (shelf: Shelf) => {
   })
   const mesh = new THREE.Mesh(geometry, material)
   
-  // Center objects around origin
-  mesh.position.set(relativeX? - 200 + width/2 : 0, relativeY? + height/2:0, Z_OFFSET.SHELF)
+  // If shelf is in a section, use its relative position
+  let shelfX = x;
+  let shelfY = y;
+  
+  if (sectionId) {
+    // Find the parent section
+    const parentSection = planogramStore.sections.find(s => s.id === sectionId);
+    if (parentSection && relativeX !== undefined && relativeY !== undefined) {
+      // Use the section's position plus the shelf's relative position
+      shelfX = parentSection.x + relativeX;
+      shelfY = parentSection.y + relativeY;
+    }
+  }
+  
+  // Transform coordinates from 2D to 3D
+  const position = transformCoordinates(shelfX, shelfY, width, height, Z_OFFSET.SHELF);
+  mesh.position.set(position.x, position.y, position.z);
+  
+  // Add name for debugging
+  mesh.name = `shelf-${shelf.id}`;
   mesh.castShadow = true
   mesh.receiveShadow = true
   return mesh
@@ -183,8 +228,7 @@ const createShelf = (shelf: Shelf) => {
 
 // Create product mesh
 const createProduct = (product: Product) => {
-  console.log({product});
-  const { x, y, width, height, depth } = product
+  const { x, y, width, height, depth, shelfId, sectionId, relativeX, relativeY } = product
   
   const geometry = new THREE.BoxGeometry(width, height, depth)
   const material = new THREE.MeshPhongMaterial({ 
@@ -195,8 +239,42 @@ const createProduct = (product: Product) => {
   })
   const mesh = new THREE.Mesh(geometry, material)
   
-  // Center objects around origin
-  mesh.position.set(x - 100 + width/2, y + height/2, Z_OFFSET.PRODUCT)
+  // Calculate the actual position based on relationships
+  let productX = x;
+  let productY = y;
+  
+  if (shelfId) {
+    // Product is on a shelf
+    const parentShelf = planogramStore.shelves.find(s => s.id === shelfId);
+    if (parentShelf && relativeX !== undefined && relativeY !== undefined) {
+      // If shelf is in a section, use section position + shelf relative + product relative
+      if (parentShelf.sectionId) {
+        const parentSection = planogramStore.sections.find(s => s.id === parentShelf.sectionId);
+        if (parentSection && parentShelf.relativeX !== undefined && parentShelf.relativeY !== undefined) {
+          productX = parentSection.x + parentShelf.relativeX + relativeX;
+          productY = parentSection.y + parentShelf.relativeY + relativeY;
+        }
+      } else {
+        // Shelf is standalone
+        productX = parentShelf.x + relativeX;
+        productY = parentShelf.y + relativeY;
+      }
+    }
+  } else if (sectionId) {
+    // Product is directly in a section
+    const parentSection = planogramStore.sections.find(s => s.id === sectionId);
+    if (parentSection && relativeX !== undefined && relativeY !== undefined) {
+      productX = parentSection.x + relativeX;
+      productY = parentSection.y + relativeY;
+    }
+  }
+  
+  // Transform coordinates from 2D to 3D
+  const position = transformCoordinates(productX, productY, width, height, Z_OFFSET.PRODUCT);
+  mesh.position.set(position.x, position.y, position.z);
+  
+  // Add name for debugging
+  mesh.name = `product-${product.id}`;
   mesh.castShadow = true
   mesh.receiveShadow = true
   return mesh
@@ -217,24 +295,33 @@ const updateScene = () => {
 
   // First add all sections (back layer)
   planogramStore.sections.forEach(section => {
-    console.log({section})
     scene.add(createSection(section))
   })
 
   // Then add all shelves (middle layer)
   planogramStore.shelves.forEach(shelf => {
-    console.log({shelf})
     scene.add(createShelf(shelf))
   })
 
   // Finally add all products (front layer)
   planogramStore.products.forEach(product => {
-      console.log({product})
     scene.add(createProduct(product))
+  })
+  
+  // Log scene structure for debugging
+  console.log('3D Scene updated with:', {
+    sections: planogramStore.sections.length,
+    shelves: planogramStore.shelves.length,
+    products: planogramStore.products.length,
+    viewport: {
+      width: window.innerWidth - 250,
+      height: window.innerHeight - 60
+    }
   })
 }
 
 // Watch for changes in planogram data
+watch(() => planogramStore.sections, updateScene, { deep: true })
 watch(() => planogramStore.shelves, updateScene, { deep: true })
 watch(() => planogramStore.products, updateScene, { deep: true })
 
@@ -248,6 +335,9 @@ const handleResize = () => {
   camera.aspect = width / height
   camera.updateProjectionMatrix()
   renderer.setSize(width, height)
+  
+  // Update scene after resize to ensure coordinates are recalculated
+  updateScene()
 }
 
 // Lifecycle hooks
@@ -255,6 +345,12 @@ onMounted(() => {
   initThreeJs()
   updateScene()
   window.addEventListener('resize', handleResize)
+  
+  // Log initial setup for debugging
+  console.log('3D Viewer initialized with viewport:', {
+    width: window.innerWidth - 250,
+    height: window.innerHeight - 60
+  })
 })
 
 onBeforeUnmount(() => {
