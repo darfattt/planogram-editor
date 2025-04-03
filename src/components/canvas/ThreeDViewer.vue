@@ -91,7 +91,7 @@ const initThreeJs = () => {
   })
   const ground = new THREE.Mesh(groundGeometry, groundMaterial)
   ground.rotation.x = -Math.PI / 2
-  ground.position.y = -1
+  ground.position.y = 0 // Position at y=0 to be the reference point
   ground.receiveShadow = true
   ground.name = 'ground'
   scene.add(ground)
@@ -157,7 +157,12 @@ const transformCoordinates = (x: number, y: number, width: number, height: numbe
   
   // Transform to 3D coordinates (centered around origin)
   const centerX = objectCenterX - viewportCenterX;
-  const centerY = viewportCenterY - objectCenterY; // Invert Y axis (2D Y increases downward, 3D Y increases upward)
+  
+  // Invert Y axis (2D Y increases downward, 3D Y increases upward)
+  // Add a Y offset to ensure objects are above the floor
+  const yOffset = 300; // Further increased offset to ensure all objects are above the floor
+  const centerY = viewportCenterY - objectCenterY + yOffset;
+  
   const centerZ = zOffset;
   
   return { x: centerX, y: centerY, z: centerZ };
