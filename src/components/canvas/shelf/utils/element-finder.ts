@@ -44,12 +44,10 @@ export function checkSectionIntersection(
     shelfTop: pos.y,
     shelfBottom: pos.y + bounds.shelfHeight
   }
-  
   const intersection: SectionIntersection = {
     sectionRight: bounds.sectionX + bounds.sectionWidth,
     sectionBottom: bounds.sectionY + bounds.sectionHeight
   }
-
   return (
     shelfBounds.shelfLeft < intersection.sectionRight &&
     shelfBounds.shelfRight > bounds.sectionX &&

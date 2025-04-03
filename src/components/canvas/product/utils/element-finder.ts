@@ -46,14 +46,29 @@ export function findTargetShelf(
   shelves: Group[], 
   absolutePos: { x: number; y: number },
   productHeight: number,
-  yTolerance = 10
+  yTolerance = 20
 ): Group | null {
   return shelves.find(shelf => {
     const shelfPos = shelf.getAbsolutePosition()
     const shelfData = shelf.getAttr(ATTR_SHELF_DATA)
     const shelfWidth = shelf.getAttr(ATTR_WIDTH)
     const shelfHeight = shelf.getAttr(ATTR_HEIGHT)
-
+    console.log('Debug values:', {
+      shelfData,
+      shelfWidth,
+      shelfHeight,
+      absolutePos,
+      productHeight,
+      shelfPos,
+      xCheck: absolutePos.x >= shelfPos.x,
+      yCheck: absolutePos.y + productHeight + yTolerance >= shelfPos.y,
+      bounds: {
+          x1: shelfPos.x,
+          x2: shelfPos.x + shelfWidth,
+          y1: shelfPos.y,
+          y2: shelfPos.y + shelfHeight
+      }
+  });
     return shelfData && shelfWidth && shelfHeight && (
       absolutePos.x >= shelfPos.x &&
       absolutePos.x <= shelfPos.x + shelfWidth &&

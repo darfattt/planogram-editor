@@ -166,6 +166,8 @@ export default defineComponent({
         absolutePos, 
         props.product.height
       )
+      console.log("Shelf : ");
+      console.log({targetShelf});
 
       const targetProduct = targetShelf ? null : findTargetProduct(
         allProducts.filter(p => p.id() !== props.product.id),

@@ -126,7 +126,6 @@ export default defineComponent({
         props.shelf.width,
         props.shelf.height
       )
-
       if (foundSection) {
         console.log(`Shelf ${props.shelf.id} is inside section ${foundSection.id()}`)
         const positionUpdate = calculateShelfPosition(node, foundSection, pos)
