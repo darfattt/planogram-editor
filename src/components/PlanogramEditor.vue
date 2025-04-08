@@ -42,14 +42,15 @@
       </div>
       <div class="tab-content">
         <EditorCanvas 
-          v-if="activeTab.type === '2d'"
+          v-show="activeTab.type === '2d'"
           ref="editorCanvasRef"
+          @drop="handleDrop" 
           @dragover.prevent="handleDragOver"
           class="editor-canvas"
           :key="'canvas-2d'"
         />
         <ThreeDViewer
-          v-else-if="activeTab.type === '3d'"
+          v-show="activeTab.type === '3d'"
           class="three-d-viewer"
           :key="'canvas-3d'"
         />
@@ -59,7 +60,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { defineComponent, ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
 import FixtureTemplate from './templates/FixtureTemplate.vue'
 import ProductTemplate from './templates/ProductTemplate.vue'
 import EditorCanvas from './canvas/EditorCanvas.vue'
@@ -145,7 +146,7 @@ export default defineComponent({
 
     const open2DView = () => {
       // Check if 2D tab already exists
-      const existing2DTabIndex = tabs.value.findIndex(tab => tab.type === '2d');
+      //const existing2DTabIndex = tabs.value.findIndex(tab => tab.type === '2d');
       
       // if (existing2DTabIndex >= 0) {
       //   // If 2D tab exists, activate it
@@ -178,7 +179,10 @@ export default defineComponent({
       // Don't do anything if clicking the already active tab
       if (activeTabIndex.value === index) return;
       
-      activeTabIndex.value = index;
+      // Use nextTick to ensure DOM updates before changing the active tab
+      nextTick(() => {
+        activeTabIndex.value = index;
+      });
     };
 
     const closeTab = (index: number) => {
