@@ -5,8 +5,11 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite --mode development",
+    "dev:web": "vite --mode web",
     "build:dev": "vue-tsc && vite build --mode development",
     "build:prod": "vue-tsc && vite build --mode production",
+    "build:web": "vue-tsc && vite build --mode web",
+    "vercel-build": "npm run build:web",
     "preview": "vite preview",
     "electron:dev": "vite --host --mode development & electron .",
     "electron:build": "npm run build:prod && electron-builder",
