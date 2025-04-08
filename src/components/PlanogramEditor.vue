@@ -44,8 +44,6 @@
         <EditorCanvas 
           v-show="activeTab.type === '2d'"
           ref="editorCanvasRef"
-          @drop="handleDrop" 
-          @dragover.prevent="handleDragOver"
           class="editor-canvas"
           :key="'canvas-2d'"
         />
@@ -206,38 +204,6 @@ export default defineComponent({
       e.evt.preventDefault();
     };
 
-    const handleDrop = (e: Konva.KonvaEventObject<DragEvent>) => {
-      console.log('handleDrop')
-      e.evt.preventDefault();
-      if (!editorCanvasRef.value?.stageRef?.value) return;
-      
-      const stage = (editorCanvasRef.value.stageRef.value as unknown) as Konva.Stage
-      const position = stage.getPointerPosition();
-      
-      if (!position) return;
-
-      // Get the dragged type from dataTransfer
-      const type = e.evt.dataTransfer?.getData('text/plain');
-      
-      // Create new node with correct position
-      const newNode = {
-        id: uuidv4(),
-        x: position.x,
-        y: position.y,
-        width: 100,
-        height: 100,
-        type: type || 'default',
-        category: 'product'
-      };
-
-      // Add to your state
-      nodes.value = [...nodes.value, newNode];
-    }
-
-    const handleDragEnd = () => {
-      draggedItem.value = null
-    }
-
     const handleAddProduct = (item: DraggedItem) => {
       if (item.type === 'product') {
         addProduct({
@@ -351,11 +317,9 @@ export default defineComponent({
     return {
       draggedItem,
       handleDragStart,
-      handleDrop,
       handleDragOver,
       stageRef,
       nodes,
-      handleDragEnd,
       handleAddProduct,
       handleSave,
       handleLoad,

@@ -71,7 +71,6 @@ import { storeToRefs } from 'pinia'
 export default defineComponent({
   name: 'EditorCanvas',
   inheritAttrs: false,
-  emits: ['drop', 'dragover'],
   components: {
     ShelfComponent,
     ProductComponent,
