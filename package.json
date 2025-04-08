@@ -20,6 +20,7 @@
     "electron-builder": "^25.1.8",
     "konva": "^9.3.18",
     "pinia": "^2.3.1",
+    "splitpanes": "^4.0.3",
     "three": "^0.173.0",
     "uuid": "^11.0.5",
     "vite-plugin-electron": "^0.29.0",

@@ -12,8 +12,8 @@
         <button @click="showProductImages = !showProductImages">
           {{ showProductImages ? 'Hide' : 'Show' }} Images
         </button>
-        <button @click="open2DView">2D View</button>
-        <button @click="open3DView">3D View</button>
+        <!-- <button @click="open2DView">2D View</button>
+        <button @click="open3DView">3D View</button> -->
       </div>
       <div class="template-section">
         <h3>Fixtures Template</h3>
@@ -106,11 +106,15 @@ export default defineComponent({
     }
 
     const open2DView = () => {
-      workspaceRef.value?.open2DView();
+      // Get the active pane index from the workspace
+      const activePaneIndex = workspaceRef.value?.activePaneIndex ?? 0;
+      workspaceRef.value?.open2DView(activePaneIndex);
     };
 
     const open3DView = () => {
-      workspaceRef.value?.open3DView();
+      // Get the active pane index from the workspace
+      const activePaneIndex = workspaceRef.value?.activePaneIndex ?? 0;
+      workspaceRef.value?.open3DView(activePaneIndex);
     };
 
     const handleDragStart = (item: DraggedItem) => {

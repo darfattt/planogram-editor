@@ -1,35 +1,70 @@
 <template>
   <div class="workspace">
-    <div class="tabs">
-      <div 
-        v-for="(tab, index) in tabs" 
-        :key="index"
-        class="tab"
-        :class="{ active: activeTabIndex === index }"
-        @click="setActiveTab(index)"
-      >
-        {{ tab.title }}
-        <span class="close-tab" @click.stop="closeTab(index)">×</span>
-      </div>
+    <div class="workspace-toolbar">
+      <button @click="addHorizontalSplit" title="Split Horizontally">⇄</button>
+      <button @click="addVerticalSplit" title="Split Vertically">⇅</button>
+      <button @click="closeActivePane" title="Close Active Pane" :disabled="panes.length <= 1">×</button>
+      <button @click="syncPanes" title="Sync All Panes" :class="{ active: syncEnabled }">⟲</button>
     </div>
-    <div class="tab-content">
-      <EditorCanvas 
-        v-show="activeTab.type === '2d'"
-        ref="editorCanvasRef"
-        class="editor-canvas"
-        :key="'canvas-2d'"
-      />
-      <ThreeDViewer
-        v-show="activeTab.type === '3d'"
-        class="three-d-viewer"
-        :key="'canvas-3d'"
-      />
-    </div>
+    <splitpanes class="default-theme" :horizontal="isHorizontal" @resized="handlePaneResize" @pane-click="handlePaneClick">
+      <pane v-for="(pane, index) in panes" :key="index" :min-size="20">
+        <div class="pane-content" :class="{ active: activePaneIndex === index }">
+          <div class="pane-header">
+            <div class="tabs" 
+              @dragover.prevent 
+              @drop="handleTabDrop($event, index)"
+            >
+              <div 
+                v-for="(tab, tabIndex) in pane.tabs" 
+                :key="tabIndex"
+                class="tab"
+                :class="{ 
+                  active: pane.activeTabIndex === tabIndex,
+                  'dragging': isDragging && draggedTab?.sourcePane === index && draggedTab?.sourceTab === tabIndex
+                }"
+                @click="setActiveTab(index, tabIndex)"
+                draggable="true"
+                @dragstart="handleTabDragStart($event, index, tabIndex)"
+                @dragend="handleTabDragEnd"
+                @dragover.prevent
+                @dragenter="handleTabDragEnter($event, index, tabIndex)"
+              >
+                {{ tab.title }}
+                <span class="close-tab" @click.stop="closeTab(index, tabIndex)">×</span>
+              </div>
+            </div>
+            <div class="pane-controls">
+              <button @click="open2DView(index)" title="Add 2D View">2D</button>
+              <button @click="open3DView(index)" title="Add 3D View">3D</button>
+            </div>
+          </div>
+          <div class="tab-content">
+            <EditorCanvas 
+              v-if="pane.getActiveTab().type === '2d'"
+              ref="editorCanvasRef"
+              class="editor-canvas"
+              :key="'canvas-2d-' + index"
+              @update="handleCanvasUpdate(index)"
+            />
+            <ThreeDViewer
+              v-if="pane.getActiveTab().type === '3d'"
+              ref="threeDViewerRef"
+              class="three-d-viewer"
+              :key="'canvas-3d-' + index"
+              @update="handleCanvasUpdate(index)"
+            />
+          </div>
+        </div>
+      </pane>
+    </splitpanes>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, nextTick } from 'vue'
+import { defineComponent, ref, computed, nextTick, watch } from 'vue'
+import type { ComputedRef } from 'vue'
+import { Splitpanes, Pane } from 'splitpanes'
+import 'splitpanes/dist/splitpanes.css'
 import EditorCanvas from '../canvas/EditorCanvas.vue'
 import ThreeDViewer from '../canvas/ThreeDViewer.vue'
 
@@ -38,75 +73,273 @@ interface Tab {
   type: '2d' | '3d';
 }
 
+interface PaneData {
+  tabs: Tab[];
+  activeTabIndex: number;
+  getActiveTab: () => Tab;
+}
+
+interface DragData {
+  sourcePane: number;
+  sourceTab: number;
+}
+
 export default defineComponent({
   name: 'WorkspaceView',
   components: {
     EditorCanvas,
-    ThreeDViewer
+    ThreeDViewer,
+    Splitpanes,
+    Pane
   },
   setup() {
     const editorCanvasRef = ref<InstanceType<typeof EditorCanvas> | null>(null)
+    const threeDViewerRef = ref<InstanceType<typeof ThreeDViewer> | null>(null)
+    const syncEnabled = ref(false)
+    const activePaneIndex = ref(0)
+    const isHorizontal = ref(false)
+    const draggedTab = ref<DragData | null>(null)
+    const isDragging = ref(false)
     
-    // Tab management
-    const tabs = ref<Tab[]>([
-      { title: '2D View', type: '2d' }
-    ]);
-    const activeTabIndex = ref(0);
+    // Create initial pane data
+    const initialPane: PaneData = {
+      tabs: [{ title: '2D View', type: '2d' }],
+      activeTabIndex: 0,
+      getActiveTab: function() { return this.tabs[this.activeTabIndex] }
+    };
     
-    const activeTab = computed(() => tabs.value[activeTabIndex.value]);
-    
-    const open2DView = () => {
-      // Always add a new 2D tab
-      tabs.value.push({ title: '2D View', type: '2d' });
-      setActiveTab(tabs.value.length - 1);
+    // Pane management
+    const panes = ref<PaneData[]>([initialPane]);
+
+    const createNewPane = (): PaneData => ({
+      tabs: [{ title: '2D View', type: '2d' }],
+      activeTabIndex: 0,
+      getActiveTab: function() { return this.tabs[this.activeTabIndex] }
+    });
+
+    const addHorizontalSplit = (): void => {
+      isHorizontal.value = true;
+      const newPane = createNewPane();
+      panes.value.push(newPane);
+      activePaneIndex.value = panes.value.length - 1;
     };
 
-    const open3DView = () => {
-      // Check if 3D tab already exists
-      const existing3DTabIndex = tabs.value.findIndex(tab => tab.type === '3d');
+    const addVerticalSplit = (): void => {
+      isHorizontal.value = false;
+      const newPane = createNewPane();
+      panes.value.push(newPane);
+      activePaneIndex.value = panes.value.length - 1;
+    };
+    
+    const closeActivePane = (): void => {
+      if (panes.value.length <= 1) return;
+      
+      panes.value.splice(activePaneIndex.value, 1);
+      
+      if (activePaneIndex.value >= panes.value.length) {
+        activePaneIndex.value = panes.value.length - 1;
+      }
+    };
+    
+    const syncPanes = (): void => {
+      syncEnabled.value = !syncEnabled.value;
+    };
+    
+    const open2DView = (paneIndex: number): void => {
+      const pane = panes.value[paneIndex];
+      pane.tabs.push({ title: '2D View', type: '2d' });
+      setActiveTab(paneIndex, pane.tabs.length - 1);
+    };
+
+    const open3DView = (paneIndex: number): void => {
+      const pane = panes.value[paneIndex];
+      const existing3DTabIndex = pane.tabs.findIndex((tab: Tab) => tab.type === '3d');
       
       if (existing3DTabIndex >= 0) {
-        // If 3D tab exists, activate it
-        setActiveTab(existing3DTabIndex);
+        setActiveTab(paneIndex, existing3DTabIndex);
       } else {
-        // If 3D tab doesn't exist, create a new one
-        tabs.value.push({ title: '3D View', type: '3d' });
-        setActiveTab(tabs.value.length - 1);
+        pane.tabs.push({ title: '3D View', type: '3d' });
+        setActiveTab(paneIndex, pane.tabs.length - 1);
       }
     };
 
-    const setActiveTab = (index: number) => {
-      // Don't do anything if clicking the already active tab
-      if (activeTabIndex.value === index) return;
+    const setActiveTab = (paneIndex: number, tabIndex: number): void => {
+      const pane = panes.value[paneIndex];
+      if (pane.activeTabIndex === tabIndex) return;
       
-      // Use nextTick to ensure DOM updates before changing the active tab
+      activePaneIndex.value = paneIndex;
+      
       nextTick(() => {
-        activeTabIndex.value = index;
+        pane.activeTabIndex = tabIndex;
       });
     };
 
-    const closeTab = (index: number) => {
-      // Don't close the last tab
-      if (tabs.value.length <= 1) return;
+    const closeTab = (paneIndex: number, tabIndex: number): void => {
+      const pane = panes.value[paneIndex];
+      if (pane.tabs.length <= 1) return;
       
-      // Remove the tab
-      tabs.value.splice(index, 1);
+      pane.tabs.splice(tabIndex, 1);
       
-      // Adjust active tab index if needed
-      if (activeTabIndex.value >= tabs.value.length) {
-        activeTabIndex.value = tabs.value.length - 1;
+      if (pane.activeTabIndex >= pane.tabs.length) {
+        pane.activeTabIndex = pane.tabs.length - 1;
       }
+    };
+    
+    // Tab drag and drop handlers
+    const handleTabDragStart = (event: DragEvent, paneIndex: number, tabIndex: number): void => {
+      if (!event.dataTransfer) return;
+      
+      draggedTab.value = {
+        sourcePane: paneIndex,
+        sourceTab: tabIndex
+      };
+      
+      isDragging.value = true;
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', ''); // Required for Firefox
+      
+      // Add dragging class to the dragged element
+      const target = event.target as HTMLElement;
+      target.classList.add('dragging');
+    };
+    
+    const handleTabDragEnd = (): void => {
+      isDragging.value = false;
+      draggedTab.value = null;
+      
+      // Remove dragging class from all tabs
+      document.querySelectorAll('.tab.dragging').forEach(tab => {
+        tab.classList.remove('dragging');
+      });
+    };
+    
+    const handleTabDragEnter = (event: DragEvent, paneIndex: number, tabIndex: number): void => {
+      if (!draggedTab.value) return;
+      
+      const sourcePane = panes.value[draggedTab.value.sourcePane];
+      const targetPane = panes.value[paneIndex];
+      
+      // Don't do anything if dragging over the same tab
+      if (draggedTab.value.sourcePane === paneIndex && draggedTab.value.sourceTab === tabIndex) {
+        return;
+      }
+      
+      // Add visual feedback for drop target
+      const target = event.target as HTMLElement;
+      target.classList.add('drop-target');
+      
+      // Move the tab within the same pane or to a different pane
+      const [movedTab] = sourcePane.tabs.splice(draggedTab.value.sourceTab, 1);
+      targetPane.tabs.splice(tabIndex, 0, movedTab);
+      
+      // Update active tab indices if needed
+      if (sourcePane.activeTabIndex >= draggedTab.value.sourceTab) {
+        sourcePane.activeTabIndex = Math.max(0, sourcePane.activeTabIndex - 1);
+      }
+      if (targetPane.activeTabIndex >= tabIndex) {
+        targetPane.activeTabIndex++;
+      }
+      
+      // Update the draggedTab reference
+      draggedTab.value = {
+        sourcePane: paneIndex,
+        sourceTab: tabIndex
+      };
+    };
+    
+    const handleTabDrop = (event: DragEvent, paneIndex: number): void => {
+      if (!draggedTab.value) return;
+      
+      const sourcePane = panes.value[draggedTab.value.sourcePane];
+      const targetPane = panes.value[paneIndex];
+      
+      // Remove drop target class
+      document.querySelectorAll('.tab.drop-target').forEach(tab => {
+        tab.classList.remove('drop-target');
+      });
+      
+      // If dropping at the end of the tabs
+      if (draggedTab.value.sourcePane !== paneIndex) {
+        const [movedTab] = sourcePane.tabs.splice(draggedTab.value.sourceTab, 1);
+        targetPane.tabs.push(movedTab);
+        targetPane.activeTabIndex = targetPane.tabs.length - 1;
+        if (sourcePane.activeTabIndex >= draggedTab.value.sourceTab) {
+          sourcePane.activeTabIndex = Math.max(0, sourcePane.activeTabIndex - 1);
+        }
+      }
+      
+      draggedTab.value = null;
+    };
+    
+    // Pane event handlers
+    const handlePaneResize = (sizes: number[]): void => {
+      // You can store the sizes if needed for persistence
+      console.log('Pane sizes:', sizes);
+    };
+    
+    const handlePaneClick = (event: MouseEvent): void => {
+      // Find the clicked pane index
+      const paneElement = (event.target as HTMLElement).closest('.pane-content');
+      if (!paneElement) return;
+      
+      const paneIndex = Array.from(paneElement.parentElement?.parentElement?.children ?? [])
+        .findIndex(el => el.contains(paneElement));
+      
+      if (paneIndex >= 0) {
+        activePaneIndex.value = paneIndex;
+      }
+    };
+    
+    const handleCanvasUpdate = (sourcePaneIndex: number): void => {
+      if (!syncEnabled.value) return;
+      
+      // Sync the active tab type to all other panes
+      const sourcePane = panes.value[sourcePaneIndex];
+      const sourceTabType = sourcePane.getActiveTab().type;
+      
+      panes.value.forEach((pane, index) => {
+        if (index === sourcePaneIndex) return;
+        
+        // Find or create a tab of the same type
+        const existingTabIndex = pane.tabs.findIndex(tab => tab.type === sourceTabType);
+        
+        if (existingTabIndex >= 0) {
+          setActiveTab(index, existingTabIndex);
+        } else {
+          // Add a new tab of the same type
+          pane.tabs.push({ 
+            title: sourceTabType === '2d' ? '2D View' : '3D View', 
+            type: sourceTabType 
+          });
+          setActiveTab(index, pane.tabs.length - 1);
+        }
+      });
     };
 
     return {
       editorCanvasRef,
-      tabs,
-      activeTabIndex,
-      activeTab,
+      threeDViewerRef,
+      panes,
+      activePaneIndex,
+      syncEnabled,
+      isHorizontal,
+      isDragging,
+      draggedTab,
+      addHorizontalSplit,
+      addVerticalSplit,
+      closeActivePane,
+      syncPanes,
       open2DView,
       open3DView,
       setActiveTab,
-      closeTab
+      closeTab,
+      handleCanvasUpdate,
+      handleTabDragStart,
+      handleTabDragEnd,
+      handleTabDragEnter,
+      handleTabDrop,
+      handlePaneResize,
+      handlePaneClick
     }
   }
 })
@@ -122,27 +355,114 @@ export default defineComponent({
   flex-direction: column;
 }
 
+.workspace-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ddd;
+}
+
+.workspace-toolbar button {
+  padding: 4px 8px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.workspace-toolbar button:hover {
+  background-color: #e0e0e0;
+}
+
+.workspace-toolbar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.workspace-toolbar button.active {
+  background-color: #2196f3;
+  color: white;
+  border-color: #1976d2;
+}
+
+.pane-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.pane-content.active {
+  border-color: #2196f3;
+}
+
+.pane-header {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid #ddd;
+}
+
+.pane-controls {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #ddd;
+}
+
+.pane-controls button {
+  padding: 2px 6px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.pane-controls button:hover {
+  background-color: #e0e0e0;
+}
+
 .tabs {
   display: flex;
   background-color: #f0f0f0;
-  border-bottom: 1px solid #ddd;
   overflow-x: auto;
+  min-height: 40px;
 }
 
 .tab {
   padding: 10px 15px;
   background-color: #e0e0e0;
   border-right: 1px solid #ddd;
-  cursor: pointer;
+  cursor: move;
   display: flex;
   align-items: center;
   min-width: 100px;
   position: relative;
+  user-select: none;
+  transition: all 0.2s ease;
 }
 
 .tab.active {
   background-color: #fff;
   border-bottom: 2px solid #2196f3;
+}
+
+.tab:hover {
+  background-color: #d0d0d0;
+}
+
+.tab.dragging {
+  opacity: 0.5;
+  background-color: #2196f3;
+  color: white;
+}
+
+.tab.drop-target {
+  border-left: 2px solid #2196f3;
 }
 
 .close-tab {
@@ -157,6 +477,8 @@ export default defineComponent({
   border-radius: 50%;
   background-color: #ccc;
   color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .close-tab:hover {
@@ -174,5 +496,44 @@ export default defineComponent({
 .three-d-viewer {
   width: 100%;
   height: 100%;
+  transition: opacity 0.3s ease;
+}
+
+:deep(.splitpanes__splitter) {
+  background-color: #f0f0f0;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+:deep(.splitpanes__splitter:hover) {
+  background-color: #2196f3;
+}
+
+:deep(.splitpanes__splitter:before) {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  transition: opacity 0.4s;
+  background-color: #2196f3;
+  opacity: 0;
+}
+
+:deep(.splitpanes__splitter:hover:before) {
+  opacity: 1;
+}
+
+:deep(.splitpanes--vertical > .splitpanes__splitter:before) {
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+}
+
+:deep(.splitpanes--horizontal > .splitpanes__splitter:before) {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
 }
 </style> 
