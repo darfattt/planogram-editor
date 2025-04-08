@@ -12,9 +12,8 @@
         <button @click="showProductImages = !showProductImages">
           {{ showProductImages ? 'Hide' : 'Show' }} Images
         </button>
-        <button @click="toggleViewMode">
-          {{ is3DMode ? '2D View' : '3D View' }}
-        </button>
+        <button @click="open2DView">2D View</button>
+        <button @click="open3DView">3D View</button>
       </div>
       <div class="template-section">
         <h3>Fixtures Template</h3>
@@ -29,24 +28,38 @@
       </div>
     </div>
     <div class="workspace">
-      <EditorCanvas 
-        v-if="!is3DMode"
-        ref="editorCanvasRef"
-        @drop="handleDrop" 
-        @dragover.prevent="handleDragOver"
-        class="editor-canvas"
-        :key="canvasKey"
-      />
-      <ThreeDViewer
-        v-else
-        class="three-d-viewer"
-      />
+      <div class="tabs">
+        <div 
+          v-for="(tab, index) in tabs" 
+          :key="index"
+          class="tab"
+          :class="{ active: activeTabIndex === index }"
+          @click="setActiveTab(index)"
+        >
+          {{ tab.title }}
+          <span class="close-tab" @click.stop="closeTab(index)">×</span>
+        </div>
+      </div>
+      <div class="tab-content">
+        <EditorCanvas 
+          v-if="activeTab.type === '2d'"
+          ref="editorCanvasRef"
+          @dragover.prevent="handleDragOver"
+          class="editor-canvas"
+          :key="'canvas-2d'"
+        />
+        <ThreeDViewer
+          v-else-if="activeTab.type === '3d'"
+          class="three-d-viewer"
+          :key="'canvas-3d'"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, onBeforeUnmount } from 'vue'
+import { defineComponent, ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import FixtureTemplate from './templates/FixtureTemplate.vue'
 import ProductTemplate from './templates/ProductTemplate.vue'
 import EditorCanvas from './canvas/EditorCanvas.vue'
@@ -56,6 +69,11 @@ import { v4 as uuidv4 } from 'uuid'
 import Konva from 'konva'
 import { usePlanogramStore } from '../composables/usePlanogramStore'
 import { storeToRefs } from 'pinia'
+
+interface Tab {
+  title: string;
+  type: '2d' | '3d';
+}
 
 export default defineComponent({
   name: 'PlanogramEditor',
@@ -75,8 +93,15 @@ export default defineComponent({
     const { sections, shelves, products, showProductImages } = storeToRefs(store)
     const editorCanvasRef = ref<InstanceType<typeof EditorCanvas> | null>(null)
     const canvasKey = ref(0)
-    const is3DMode = ref(false)
     const showUndoNotification = ref(false)
+    
+    // Tab management
+    const tabs = ref<Tab[]>([
+      { title: '2D View', type: '2d' }
+    ]);
+    const activeTabIndex = ref(0);
+    
+    const activeTab = computed(() => tabs.value[activeTabIndex.value]);
 
     // Initialize with test data only if no data exists
     onMounted(() => {
@@ -118,9 +143,56 @@ export default defineComponent({
       }
     }
 
-    const toggleViewMode = () => {
-      is3DMode.value = !is3DMode.value
-    }
+    const open2DView = () => {
+      // Check if 2D tab already exists
+      const existing2DTabIndex = tabs.value.findIndex(tab => tab.type === '2d');
+      
+      // if (existing2DTabIndex >= 0) {
+      //   // If 2D tab exists, activate it
+      //   setActiveTab(existing2DTabIndex);
+      // } else {
+      //   // If 2D tab doesn't exist, create a new one
+      //   tabs.value.push({ title: '2D View', type: '2d' });
+      //   setActiveTab(tabs.value.length - 1);
+      // }
+      // always add
+      tabs.value.push({ title: '2D View', type: '2d' });
+      setActiveTab(tabs.value.length - 1);
+    };
+
+    const open3DView = () => {
+      // Check if 3D tab already exists
+      const existing3DTabIndex = tabs.value.findIndex(tab => tab.type === '3d');
+      
+      if (existing3DTabIndex >= 0) {
+        // If 3D tab exists, activate it
+        setActiveTab(existing3DTabIndex);
+      } else {
+        // If 3D tab doesn't exist, create a new one
+        tabs.value.push({ title: '3D View', type: '3d' });
+        setActiveTab(tabs.value.length - 1);
+      }
+    };
+
+    const setActiveTab = (index: number) => {
+      // Don't do anything if clicking the already active tab
+      if (activeTabIndex.value === index) return;
+      
+      activeTabIndex.value = index;
+    };
+
+    const closeTab = (index: number) => {
+      // Don't close the last tab
+      if (tabs.value.length <= 1) return;
+      
+      // Remove the tab
+      tabs.value.splice(index, 1);
+      
+      // Adjust active tab index if needed
+      if (activeTabIndex.value >= tabs.value.length) {
+        activeTabIndex.value = tabs.value.length - 1;
+      }
+    };
 
     const handleDragStart = (item: DraggedItem) => {
       draggedItem.value = item
@@ -287,9 +359,14 @@ export default defineComponent({
       editorCanvasRef,
       canvasKey,
       showProductImages,
-      is3DMode,
-      toggleViewMode,
-      showUndoNotification
+      showUndoNotification,
+      tabs,
+      activeTabIndex,
+      activeTab,
+      open2DView,
+      open3DView,
+      setActiveTab,
+      closeTab
     }
   }
 })
@@ -347,6 +424,56 @@ export default defineComponent({
 .workspace {
   flex: 1;
   background-color: #fff;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.tabs {
+  display: flex;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ddd;
+  overflow-x: auto;
+}
+
+.tab {
+  padding: 10px 15px;
+  background-color: #e0e0e0;
+  border-right: 1px solid #ddd;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  min-width: 100px;
+  position: relative;
+}
+
+.tab.active {
+  background-color: #fff;
+  border-bottom: 2px solid #2196f3;
+}
+
+.close-tab {
+  margin-left: 8px;
+  font-size: 16px;
+  line-height: 1;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #ccc;
+  color: #333;
+}
+
+.close-tab:hover {
+  background-color: #999;
+  color: #fff;
+}
+
+.tab-content {
+  flex: 1;
   overflow: hidden;
   position: relative;
 }
