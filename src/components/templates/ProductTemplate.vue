@@ -4,13 +4,13 @@
       
     </div>
     <div class="template-item">
-        <button class="add-button" @click.stop.prevent="addProductToCanvas(50, 50)">+ Add New (50x50)</button>
+        <button class="add-button" @click.stop.prevent="addProductToCanvas(50, 50, 'PROD-5050')">+ Add New (50x50)</button>
     </div>
       <div class="template-item">
-        <button class="add-button" @click.stop.prevent="addProductToCanvas(50, 100)">+ Add New (50x100)</button>
+        <button class="add-button" @click.stop.prevent="addProductToCanvas(50, 100, 'PROD-50100')">+ Add New (50x100)</button>
       </div>
       <div class="template-item">
-        <button class="add-button" @click.stop.prevent="addProductToCanvas(100, 100)">+ Add New (100x100)</button>
+        <button class="add-button" @click.stop.prevent="addProductToCanvas(100, 100, 'PROD-100100')">+ Add New (100x100)</button>
       </div>
     
   </div>
@@ -30,8 +30,10 @@ export default defineComponent({
           type: 'product',
           properties: {
             width: 50,
-            height: 100
-          }
+            height: 100,
+            depth: 30
+          },
+          code: `PROD-${Date.now().toString().slice(-4)}`
         }
         e.dataTransfer.setData('text/plain', 'product')
         e.dataTransfer.setData('application/json', JSON.stringify(item))
@@ -39,17 +41,18 @@ export default defineComponent({
       }
     }
 
-    const addProductToCanvas = (width: number,height: number) => {
+    const addProductToCanvas = (width: number, height: number, code?: string) => {
       const item: DraggedItem = {
         type: 'product',
         properties: {
           width: width,
           height: height,
+          depth: 30
         }
       }
       emit('add-product', {
         ...item,
-        code: `PROD-${Date.now().toString().slice(-4)}`,
+        code: code ?? `PROD-${Date.now().toString().slice(-4)}`,
         position: { x: 100, y: 100 }
       })
     }

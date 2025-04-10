@@ -278,11 +278,35 @@ export default defineComponent({
     };
     
     const handlePaneClick = (event: MouseEvent): void => {
-      // Find the clicked pane index
-      const paneElement = (event.target as HTMLElement).closest('.pane-content');
-      if (!paneElement) return;
+      // Ensure we have a valid target element
+      if (!event.target) return;
       
-      const paneIndex = Array.from(paneElement.parentElement?.parentElement?.children ?? [])
+      // Find the clicked pane index
+      const targetElement = event.target as HTMLElement;
+      const paneElement = targetElement.closest('.pane-content');
+      
+      // If we can't find a pane element, try to find the parent pane
+      if (!paneElement) {
+        // Check if we clicked directly on a pane
+        if (targetElement.classList.contains('pane-content')) {
+          const paneIndex = Array.from(targetElement.parentElement?.parentElement?.children ?? [])
+            .findIndex(el => el === targetElement.parentElement);
+          
+          if (paneIndex >= 0) {
+            activePaneIndex.value = paneIndex;
+          }
+        }
+        return;
+      }
+      
+      // Find the pane index
+      const paneParent = paneElement.parentElement;
+      if (!paneParent) return;
+      
+      const paneGrandParent = paneParent.parentElement;
+      if (!paneGrandParent) return;
+      
+      const paneIndex = Array.from(paneGrandParent.children)
         .findIndex(el => el.contains(paneElement));
       
       if (paneIndex >= 0) {

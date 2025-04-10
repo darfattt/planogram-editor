@@ -42,7 +42,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     // Test Section centered on canvas
     const testSection = {
       id: "section1",
-      x: (window.innerWidth - 250 - 400) / 2, // Center horizontally (canvas width - section width) / 2
+      x: (window.innerWidth - 60 - 400) / 2, // Center horizontally (canvas width - section width) / 2
       y: (window.innerHeight - 60 - 600) / 2, // Center vertically (canvas height - section height) / 2
       width: 400,
       height: 600,

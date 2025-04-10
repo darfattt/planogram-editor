@@ -2,7 +2,8 @@ import type { Node } from 'konva/lib/Node'
 import {
   ATTR_ID,
   ATTR_X,
-  ATTR_Y
+  ATTR_Y,
+  ATTR_SECTION_ID
 } from '../../shared/constants'
 
 export interface ShelfPositionUpdate {
@@ -21,19 +22,26 @@ export function calculateShelfPosition(
   const sectionX = section.x()
   const sectionY = section.y()
   
-  // Move shelf to section
+  // Always align to left (x: 0) when in a section
+  const relativeX = 0
+  const relativeY = pos.y - sectionY
+  
+  // Move shelf to section and set position
   node.moveTo(section)
   node.position({
-    x: 0,
-    y: pos.y - sectionY
+    x: relativeX,
+    y: relativeY
   })
+  
+  // Set the section ID attribute
+  node.setAttr(ATTR_SECTION_ID, section.id())
 
   return {
     sectionId: section.id(),
     x: sectionX,
     y: pos.y,
-    relativeX: 0,
-    relativeY: pos.y - sectionY
+    relativeX: relativeX,
+    relativeY: relativeY
   }
 }
 

@@ -53,7 +53,12 @@ import {
   DEFAULT_CATEGORY_PRODUCT,
   DEFAULT_TYPE,
   ATTR_CATEGORY,
-  ATTR_ID
+  ATTR_ID,
+  CATEGORY_FIXTURES,
+  ATTR_SUB_CATEGORY,
+  SUB_CATEGORY_SECTION,
+  ATTR_SECTION_ID,
+  Y_TOLERANCE
 } from '../shared/constants'
 import type { 
   ProductCollisionState, 
@@ -161,17 +166,86 @@ export default defineComponent({
 
       const { shelves, allProducts } = findElements(stage)
       
+      // Use Y_TOLERANCE constant for finding target shelf
       const targetShelf = findTargetShelf(
         shelves, 
         absolutePos, 
-        props.product.height
+        props.product.height,
+        Y_TOLERANCE
       )
 
+      // Use Y_TOLERANCE constant for finding target product
       const targetProduct = targetShelf ? null : findTargetProduct(
         allProducts.filter(p => p.id() !== props.product.id),
         absolutePos,
-        props.product.height
+        props.product.height,
+        Y_TOLERANCE
       )
+
+      // If we're in a section but not directly on a shelf, try to find the nearest shelf below
+      if (!targetShelf && !targetProduct) {
+        const sections = stage.find((n: Node) => 
+          n.getAttr(ATTR_CATEGORY)?.toLowerCase() === CATEGORY_FIXTURES && 
+          n.getAttr(ATTR_SUB_CATEGORY)?.toLowerCase() === SUB_CATEGORY_SECTION
+        )
+        
+        // Check if we're inside any section
+        for (const section of sections) {
+          const sectionBox = section.getClientRect()
+          if (
+            absolutePos.x >= sectionBox.x && 
+            absolutePos.x <= sectionBox.x + sectionBox.width &&
+            absolutePos.y >= sectionBox.y && 
+            absolutePos.y <= sectionBox.y + sectionBox.height
+          ) {
+            // We're inside a section, find the nearest shelf below
+            const sectionShelves = shelves.filter(shelf => 
+              shelf.getAttr(ATTR_SECTION_ID) === section.id()
+            )
+            
+            // Sort shelves by y position (top to bottom)
+            const sortedShelves = [...sectionShelves].sort((a, b) => a.y() - b.y())
+            
+            // Find the first shelf that's below our current position
+            const nearestShelfBelow = sortedShelves.find(shelf => 
+              shelf.y() > absolutePos.y
+            )
+            
+            if (nearestShelfBelow) {
+              // Use this shelf as our target
+              const positionData = calculatePositionData(
+                node,
+                nearestShelfBelow,
+                null,
+                absolutePos,
+                props.product.height,
+                selectionStore.productGap,
+                originalPosition.value
+              )
+              
+              // Update product position
+              const { updateProductPosition } = usePlanogramStore()
+              updateProductPosition({
+                id: props.product.id,
+                x: positionData.x,
+                y: positionData.y,
+                relativeX: positionData.relativeX,
+                relativeY: positionData.relativeY,
+                shelfId: positionData.shelfId,
+                sectionId: positionData.sectionId,
+              })
+              
+              emit('dragend', {
+                id: props.product.id,
+                parentProductId: null,
+                ...positionData
+              })
+              
+              return
+            }
+          }
+        }
+      }
 
       const positionData = calculatePositionData(
         node,
