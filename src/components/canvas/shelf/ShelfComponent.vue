@@ -102,12 +102,14 @@ export default defineComponent({
     }
 
     const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
+      // Don't use cancelBubble as it might cause issues with Konva's event system
       const node = e.target
       const pos = node.getStage()?.getPointerPosition()
       debugStore.setDragNodePosition(pos ?? DEFAULT_POSITION)
     }
 
     const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
+      // Don't use cancelBubble as it might cause issues with Konva's event system
       console.log('handleDragEnd', props.shelf.id)
       debugStore.clearDragNodePosition()
       const node = e.target
