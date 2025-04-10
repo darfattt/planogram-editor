@@ -12,9 +12,8 @@
         <button @click="showProductImages = !showProductImages">
           {{ showProductImages ? 'Hide' : 'Show' }} Images
         </button>
-        <button @click="toggleViewMode">
-          {{ is3DMode ? '2D View' : '3D View' }}
-        </button>
+        <!-- <button @click="open2DView">2D View</button>
+        <button @click="open3DView">3D View</button> -->
       </div>
       <div class="template-section">
         <h3>Fixtures Template</h3>
@@ -28,29 +27,20 @@
         />
       </div>
     </div>
-    <div class="workspace">
-      <EditorCanvas 
-        v-if="!is3DMode"
-        ref="editorCanvasRef"
-        @drop="handleDrop" 
-        @dragover.prevent="handleDragOver"
-        class="editor-canvas"
-        :key="canvasKey"
-      />
-      <ThreeDViewer
-        v-else
-        class="three-d-viewer"
-      />
-    </div>
+    
+    <WorkspaceView 
+      ref="workspaceRef"
+      @open-2d-view="open2DView"
+      @open-3d-view="open3DView"
+    />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, onBeforeUnmount } from 'vue'
+import { defineComponent, ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import FixtureTemplate from './templates/FixtureTemplate.vue'
 import ProductTemplate from './templates/ProductTemplate.vue'
-import EditorCanvas from './canvas/EditorCanvas.vue'
-import ThreeDViewer from './canvas/ThreeDViewer.vue'
+import WorkspaceView from './workspace/WorkspaceView.vue'
 import type { DraggedItem, Product, Section, Shelf } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import Konva from 'konva'
@@ -62,8 +52,7 @@ export default defineComponent({
   components: {
     FixtureTemplate,
     ProductTemplate,
-    EditorCanvas,
-    ThreeDViewer
+    WorkspaceView
   },
   setup() {
     console.log('PlanogramEditor setup');
@@ -73,11 +62,9 @@ export default defineComponent({
     const store = usePlanogramStore()
     const { addProduct } = store
     const { sections, shelves, products, showProductImages } = storeToRefs(store)
-    const editorCanvasRef = ref<InstanceType<typeof EditorCanvas> | null>(null)
-    const canvasKey = ref(0)
-    const is3DMode = ref(false)
+    const workspaceRef = ref<InstanceType<typeof WorkspaceView> | null>(null)
     const showUndoNotification = ref(false)
-
+    
     // Initialize with test data only if no data exists
     onMounted(() => {
       if (sections.value.length === 0) {
@@ -118,9 +105,17 @@ export default defineComponent({
       }
     }
 
-    const toggleViewMode = () => {
-      is3DMode.value = !is3DMode.value
-    }
+    const open2DView = () => {
+      // Get the active pane index from the workspace
+      const activePaneIndex = workspaceRef.value?.activePaneIndex ?? 0;
+      workspaceRef.value?.open2DView(activePaneIndex);
+    };
+
+    const open3DView = () => {
+      // Get the active pane index from the workspace
+      const activePaneIndex = workspaceRef.value?.activePaneIndex ?? 0;
+      workspaceRef.value?.open3DView(activePaneIndex);
+    };
 
     const handleDragStart = (item: DraggedItem) => {
       draggedItem.value = item
@@ -129,38 +124,6 @@ export default defineComponent({
     const handleDragOver = (e: Konva.KonvaEventObject<DragEvent>) => {
       e.evt.preventDefault();
     };
-
-    const handleDrop = (e: Konva.KonvaEventObject<DragEvent>) => {
-      console.log('handleDrop')
-      e.evt.preventDefault();
-      if (!editorCanvasRef.value?.stageRef?.value) return;
-      
-      const stage = (editorCanvasRef.value.stageRef.value as unknown) as Konva.Stage
-      const position = stage.getPointerPosition();
-      
-      if (!position) return;
-
-      // Get the dragged type from dataTransfer
-      const type = e.evt.dataTransfer?.getData('text/plain');
-      
-      // Create new node with correct position
-      const newNode = {
-        id: uuidv4(),
-        x: position.x,
-        y: position.y,
-        width: 100,
-        height: 100,
-        type: type || 'default',
-        category: 'product'
-      };
-
-      // Add to your state
-      nodes.value = [...nodes.value, newNode];
-    }
-
-    const handleDragEnd = () => {
-      draggedItem.value = null
-    }
 
     const handleAddProduct = (item: DraggedItem) => {
       if (item.type === 'product') {
@@ -259,9 +222,6 @@ export default defineComponent({
             if (jsonData.nodes) {
               nodes.value.push(...jsonData.nodes)
             }
-
-            // Force canvas remount by changing key
-            canvasKey.value++
           } catch (error) {
             console.error('Error loading file:', error)
           }
@@ -275,21 +235,18 @@ export default defineComponent({
     return {
       draggedItem,
       handleDragStart,
-      handleDrop,
       handleDragOver,
       stageRef,
       nodes,
-      handleDragEnd,
       handleAddProduct,
       handleSave,
       handleLoad,
       handleUndo,
-      editorCanvasRef,
-      canvasKey,
+      workspaceRef,
       showProductImages,
-      is3DMode,
-      toggleViewMode,
-      showUndoNotification
+      showUndoNotification,
+      open2DView,
+      open3DView
     }
   }
 })
@@ -342,19 +299,6 @@ export default defineComponent({
 .template-section h3 {
   margin-bottom: 10px;
   color: #333;
-}
-
-.workspace {
-  flex: 1;
-  background-color: #fff;
-  overflow: hidden;
-  position: relative;
-}
-
-.editor-canvas,
-.three-d-viewer {
-  width: 100%;
-  height: 100%;
 }
 
 .undo-notification {

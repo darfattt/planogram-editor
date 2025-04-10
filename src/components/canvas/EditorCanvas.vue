@@ -71,7 +71,6 @@ import { storeToRefs } from 'pinia'
 export default defineComponent({
   name: 'EditorCanvas',
   inheritAttrs: false,
-  emits: ['drop', 'dragover'],
   components: {
     ShelfComponent,
     ProductComponent,
@@ -86,18 +85,18 @@ export default defineComponent({
     const selectionStore = useSelectionStore()
 
     const stageConfig = {
-      width: window.innerWidth - 250,
-      height: window.innerHeight -60,
+      width: window.innerWidth - 50,
+      height: window.innerHeight - 50,
       scale: { x: 1, y: 1 },
       style: {
         border: '2px solid #e0e0e0'
       }
     }
 
-    // Initialize test data only if no data exists
     if (sections.value.length === 0) {
-      initializeTestData()
-    }
+       // Initialize test data on component mount
+        initializeTestData()
+      }
 
     // Add cache map at the top of setup
     const shelfPositionCache = new Map<string, { x: number; y: number }>()
