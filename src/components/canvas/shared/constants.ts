@@ -24,6 +24,8 @@ export const ATTR_COLOR = 'color'
 export const ATTR_FILL = 'fill'
 export const ATTR_RELATIVE_X = 'relativeX'
 export const ATTR_RELATIVE_Y = 'relativeY'
+export const ATTR_SHELF_ID = 'shelfId'
+export const ATTR_PRODUCT_ID = 'productId'
 
 // Colors
 export const COLOR_RED = 'red'
@@ -31,3 +33,6 @@ export const COLOR_RED = 'red'
 // Common values
 export const DEFAULT_CATEGORY_PRODUCT = 'Product'
 export const DEFAULT_TYPE = '-'
+
+// Y-tolerance for product placement on shelves and other products
+export const Y_TOLERANCE = 30
