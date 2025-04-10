@@ -12,6 +12,8 @@ export interface Size {
 export interface DraggedItem {
   type: 'section' | 'shelf' | 'product'
   properties: Size
+  position?: Position
+  code?: string
 }
 
 export interface Section {

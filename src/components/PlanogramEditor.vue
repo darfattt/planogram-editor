@@ -128,14 +128,14 @@ export default defineComponent({
     const handleAddProduct = (item: DraggedItem) => {
       if (item.type === 'product') {
         addProduct({
-          x: 100,
-          y: 100,
+          x: item.position?.x ?? 100,
+          y: item.position?.y ?? 100,
           width: item.properties.width,
           height: item.properties.height,
           depth: 30, // Default depth for products
           type: 'default',
           color: '#4444ff',
-          code: 'default'
+          code: item.code ?? 'default'
         })
       }
     }

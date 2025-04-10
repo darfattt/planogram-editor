@@ -220,6 +220,7 @@ export default defineComponent({
             depth: item.properties.depth,
             relativeX: 0,
             relativeY: 0,
+            code: item.code ?? `PROD-${Date.now().toString().slice(-4)}`
           })
         }
       } catch (error) {
