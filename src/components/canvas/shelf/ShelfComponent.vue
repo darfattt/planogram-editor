@@ -113,11 +113,15 @@ export default defineComponent({
       const node = e.target
       if(node.getAttr(ATTR_CATEGORY) !== CATEGORY_FIXTURES && 
          node.getAttr(ATTR_SUB_CATEGORY) !== SUB_CATEGORY_SHELF) return
-      if (node.getAttr(ATTR_SECTION_ID) != null) return;
       
       const pos = node.getAbsolutePosition()
       const stage = node.getStage();
       if (!stage) return
+
+      // Store original position before checking for sections
+      const originalX = props.shelf.sectionId ? (props.shelf.relativeX ?? 0) : (props.shelf.x ?? 0)
+      const originalY = props.shelf.sectionId ? (props.shelf.relativeY ?? 0) : (props.shelf.y ?? 0)
+      const originalSectionId = props.shelf.sectionId
 
       const sections = findSections(stage)
       const foundSection = findIntersectingSection(
@@ -130,6 +134,9 @@ export default defineComponent({
       if (foundSection) {
         console.log(`Shelf ${props.shelf.id} is inside section ${foundSection.id()}`)
         const positionUpdate = calculateShelfPosition(node, foundSection, pos)
+        
+        // Log the position update for debugging
+        console.log('Position update:', positionUpdate)
         
         // Use store method to update shelf position to ensure history tracking
         planogramStore.updateShelfPosition({
@@ -150,20 +157,79 @@ export default defineComponent({
           y: positionUpdate.y,
           products: props.products
         })
+        
+        // Manually set the section ID and relative position on the node
+        node.setAttr(ATTR_SECTION_ID, foundSection.id())
+        node.position({
+          x: 0, // Always align to left
+          y: positionUpdate.relativeY
+        })
       } else {
         console.log(`Shelf ${props.shelf.id} is not within any section`)
         
-        // Update position for standalone shelf
-        planogramStore.updateShelfPosition({
-          id: props.shelf.id,
-          x: pos.x,
-          y: pos.y,
-          products: props.products.map(p => ({
-            id: p.id,
-            relativeX: p.relativeX || 0,
-            relativeY: p.relativeY || 0
-          }))
-        })
+        // If the shelf was previously in a section, revert to its original position
+        if (originalSectionId) {
+          console.log(`Reverting shelf ${props.shelf.id} to its original position`)
+          
+          // Find the original section
+          const originalSection = sections.find(s => s.id() === originalSectionId)
+          if (originalSection) {
+            // Move back to original section
+            node.moveTo(originalSection)
+            node.position({
+              x: originalX,
+              y: originalY
+            })
+            node.setAttr(ATTR_SECTION_ID, originalSectionId)
+            
+            // Update store with original position
+            planogramStore.updateShelfPosition({
+              id: props.shelf.id,
+              x: originalSection.x(),
+              y: originalSection.y() + originalY,
+              products: props.products.map(p => ({
+                id: p.id,
+                relativeX: p.relativeX || 0,
+                relativeY: p.relativeY || 0
+              }))
+            })
+            
+            // Finalize position
+            planogramStore.finalizeShelfPosition({
+              id: props.shelf.id,
+              x: originalSection.x(),
+              y: originalSection.y() + originalY,
+              products: props.products
+            })
+          } else {
+            // If original section not found, just update position
+            planogramStore.updateShelfPosition({
+              id: props.shelf.id,
+              x: props.shelf.x,
+              y: props.shelf.y,
+              products: props.products.map(p => ({
+                id: p.id,
+                relativeX: p.relativeX || 0,
+                relativeY: p.relativeY || 0
+              }))
+            })
+          }
+        } else {
+          // For standalone shelves, update position
+          planogramStore.updateShelfPosition({
+            id: props.shelf.id,
+            x: pos.x,
+            y: pos.y,
+            products: props.products.map(p => ({
+              id: p.id,
+              relativeX: p.relativeX || 0,
+              relativeY: p.relativeY || 0
+            }))
+          })
+          
+          // Clear section ID for standalone shelf
+          node.setAttr(ATTR_SECTION_ID, null)
+        }
       }
     }
 
