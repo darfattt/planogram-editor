@@ -85,8 +85,8 @@ export default defineComponent({
     const selectionStore = useSelectionStore()
 
     const stageConfig = {
-      width: window.innerWidth - 250,
-      height: window.innerHeight -60,
+      width: window.innerWidth - 50,
+      height: window.innerHeight - 50,
       scale: { x: 1, y: 1 },
       style: {
         border: '2px solid #e0e0e0'
