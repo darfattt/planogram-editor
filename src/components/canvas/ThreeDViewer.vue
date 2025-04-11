@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { usePlanogramStore } from '../../composables/usePlanogramStore'
@@ -343,9 +343,23 @@ const updateScene = () => {
 }
 
 // Watch for changes in planogram data
-watch(() => planogramStore.sections, updateScene, { deep: true })
-watch(() => planogramStore.shelves, updateScene, { deep: true })
-watch(() => planogramStore.products, updateScene, { deep: true })
+watch(() => planogramStore.sections, () => {
+  nextTick(() => {
+    updateScene();
+  });
+}, { deep: true });
+
+watch(() => planogramStore.shelves, () => {
+  nextTick(() => {
+    updateScene();
+  });
+}, { deep: true });
+
+watch(() => planogramStore.products, () => {
+  nextTick(() => {
+    updateScene();
+  });
+}, { deep: true });
 
 // Handle window resize
 const handleResize = () => {
@@ -364,23 +378,25 @@ const handleResize = () => {
 
 // Lifecycle hooks
 onMounted(() => {
-  initThreeJs()
-  updateScene()
-  window.addEventListener('resize', handleResize)
-  
-  // Log initial setup for debugging
-  console.log('3D Viewer initialized with viewport:', {
-    width: window.innerWidth - 250,
-    height: window.innerHeight - 60
-  })
-})
+  nextTick(() => {
+    initThreeJs();
+    updateScene();
+    window.addEventListener('resize', handleResize);
+    
+    // Log initial setup for debugging
+    console.log('3D Viewer initialized with viewport:', {
+      width: window.innerWidth - 250,
+      height: window.innerHeight - 60
+    });
+  });
+});
 
 onBeforeUnmount(() => {
   if (renderer) {
-    renderer.dispose()
+    renderer.dispose();
   }
-  window.removeEventListener('resize', handleResize)
-})
+  window.removeEventListener('resize', handleResize);
+});
 </script>
 
 <style scoped>

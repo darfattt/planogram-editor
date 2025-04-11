@@ -43,14 +43,12 @@
               v-if="pane.getActiveTab().type === '2d'"
               ref="editorCanvasRef"
               class="editor-canvas"
-              :key="'canvas-2d-' + index"
               @update="handleCanvasUpdate(index)"
             />
             <ThreeDViewer
               v-if="pane.getActiveTab().type === '3d'"
               ref="threeDViewerRef"
               class="three-d-viewer"
-              :key="'canvas-3d-' + index"
               @update="handleCanvasUpdate(index)"
             />
           </div>
@@ -160,6 +158,15 @@ export default defineComponent({
       } else {
         pane.tabs.push({ title: '3D View', type: '3d' });
         setActiveTab(paneIndex, pane.tabs.length - 1);
+        
+        // Ensure the 3D viewer is properly initialized after the tab is added
+        nextTick(() => {
+          const threeDViewer = threeDViewerRef.value;
+          if (threeDViewer) {
+            // Force a re-render of the 3D viewer
+            threeDViewer.$forceUpdate();
+          }
+        });
       }
     };
 
