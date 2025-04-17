@@ -48,11 +48,6 @@
         </ShelfComponent>
     </v-layer>
   </v-stage>
-  <!-- <div>
-    <div>Standalone: {{ standaloneProducts.length }}</div>
-    <div>Shelf 1: {{ getProductsByShelf('shelf1').length }}</div>
-    <div>Shelf 2: {{ getProductsByShelf('shelf2').length }}</div>
-  </div> -->
 </template>
 
 <script lang="ts">
