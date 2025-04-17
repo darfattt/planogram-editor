@@ -470,6 +470,40 @@ export const usePlanogramStore = defineStore('planogram', () => {
     return finalizeShelfPosition(payload)
   }
 
+  // Add a method to group products with the same code
+  const groupProducts = (productIds: string[]) => {
+    if (productIds.length < 2) return
+    
+    // Find all products to be grouped
+    const productsToGroup = products.value.filter(p => productIds.includes(p.id))
+    if (productsToGroup.length < 2) return
+    
+    // Get the first product as reference
+    const referenceProduct = productsToGroup[0]
+    
+    // Create a group ID
+    const groupId = `group-${referenceProduct.code}-${Date.now()}`
+    
+    // Update all products in the group to have the same group ID
+    productsToGroup.forEach(product => {
+      const index = products.value.findIndex(p => p.id === product.id)
+      if (index !== -1) {
+        products.value[index] = {
+          ...product,
+          groupId
+        }
+      }
+    })
+    
+    // Save state to history
+    saveStateToHistory()
+  }
+  
+  const wrappedGroupProducts = (productIds: string[]) => {
+    saveStateToHistory()
+    return groupProducts(productIds)
+  }
+
   return {
     sections,
     shelves,
@@ -491,6 +525,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     addSection: wrappedAddSection,
     addShelf: wrappedAddShelf,
     updateSectionPosition: wrappedUpdateSectionPosition,
+    groupProducts: wrappedGroupProducts,
     undo // Export the undo function
   }
 })

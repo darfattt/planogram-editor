@@ -60,6 +60,7 @@ export interface Product {
   type: string
   color?: string
   image?: string | null
+  groupId?: string | null
   // Add other product properties as needed
   identification?: ProductIdentification | null,
   physical?: ProductPhysical | null

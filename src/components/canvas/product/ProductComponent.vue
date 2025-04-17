@@ -20,14 +20,16 @@
     @mouseleave="handleMouseLeave"
     @click="handleClick"
   >
-    <v-rect :config="productConfig" v-if="!product.image || !showProductImages" />
-    <v-image 
-      v-else
-      :config="{
-        ...productConfig,
-        image: imageObj,
-      }"
-    />
+    <v-group>
+      <v-rect :config="productConfig" v-if="!product.image || !showProductImages" />
+      <v-image 
+        v-else
+        :config="{
+          ...productConfig,
+          image: imageObj,
+        }"
+      />
+    </v-group>
   </v-group>
 </template>
 
@@ -142,6 +144,41 @@ export default defineComponent({
       const stage = node.getStage()
       if (!stage) return
 
+      // Check if this product is part of a group
+      if (props.product.groupId) {
+        // Find all products with the same groupId
+        const groupProducts = stage.find((n: Node) => {
+          if (n.getAttr(ATTR_CATEGORY)?.toLowerCase() !== CATEGORY_PRODUCT || 
+              n.getAttr(ATTR_ID) === props.product.id) {
+            return false;
+          }
+          
+          // Check if product has the same groupId
+          const productData = store.products.find(p => p.id === n.getAttr(ATTR_ID));
+          return productData && productData.groupId === props.product.groupId;
+        });
+        
+        // Calculate the movement delta
+        const dx = node.x() - originalPosition.value.x;
+        const dy = node.y() - originalPosition.value.y;
+        
+        // Move all products in the group by the same amount
+        groupProducts.forEach(groupProduct => {
+          const currentX = groupProduct.x();
+          const currentY = groupProduct.y();
+          groupProduct.position({
+            x: currentX + dx,
+            y: currentY + dy
+          });
+        });
+        
+        // Update original position for the next move
+        originalPosition.value = {
+          x: node.x(),
+          y: node.y()
+        };
+      }
+
       const allProducts = stage.find((n: Node) => 
         n.getAttr(ATTR_CATEGORY)?.toLowerCase() === CATEGORY_PRODUCT && 
         n.getAttr(ATTR_ID) !== props.product.id
@@ -184,6 +221,7 @@ export default defineComponent({
 
       // If we're in a section but not directly on a shelf, try to find the nearest shelf below
       if (!targetShelf && !targetProduct) {
+        console.log('find nearest shelf...');
         const sections = stage.find((n: Node) => 
           n.getAttr(ATTR_CATEGORY)?.toLowerCase() === CATEGORY_FIXTURES && 
           n.getAttr(ATTR_SUB_CATEGORY)?.toLowerCase() === SUB_CATEGORY_SECTION
@@ -235,6 +273,43 @@ export default defineComponent({
                 sectionId: positionData.sectionId,
               })
               
+              // If this product is part of a group, update all products in the group
+              if (props.product.groupId) {
+                // Find all products with the same groupId
+                const groupProducts = stage.find((n: Node) => {
+                  if (n.getAttr(ATTR_CATEGORY)?.toLowerCase() !== CATEGORY_PRODUCT || 
+                      n.getAttr(ATTR_ID) === props.product.id) {
+                    return false;
+                  }
+                  
+                  // Check if product has the same groupId
+                  const productData = store.products.find(p => p.id === n.getAttr(ATTR_ID));
+                  return productData && productData.groupId === props.product.groupId;
+                });
+                
+                // Calculate the movement delta
+                const dx = positionData.x - props.product.x;
+                const dy = positionData.y - props.product.y;
+                
+                // Update all products in the group
+                groupProducts.forEach(groupProduct => {
+                  const productId = groupProduct.getAttr(ATTR_ID);
+                  const productData = store.products.find(p => p.id === productId);
+                  
+                  if (productData) {
+                    updateProductPosition({
+                      id: productId,
+                      x: productData.x + dx,
+                      y: productData.y + dy,
+                      relativeX: productData.relativeX,
+                      relativeY: productData.relativeY,
+                      shelfId: positionData.shelfId,
+                      sectionId: positionData.sectionId,
+                    });
+                  }
+                });
+              }
+              
               emit('dragend', {
                 id: props.product.id,
                 parentProductId: null,
@@ -269,6 +344,48 @@ export default defineComponent({
           collisionProduct: null
         }
       }
+      
+      // Check for nearby products with the same code to group them
+      if (!targetShelf && !targetProduct) {
+        // Find all products with the same code that are nearby
+        const nearbyProducts = stage.find((n: Node) => {
+          if (n.getAttr(ATTR_CATEGORY)?.toLowerCase() !== CATEGORY_PRODUCT || 
+              n.getAttr(ATTR_ID) === props.product.id) {
+            return false;
+          }
+          
+          // Check if product has the same code
+          if (n.getAttr('code') !== props.product.code) {
+            return false;
+          }
+          
+          // Check if product is nearby (within a certain distance)
+          const productPos = n.getAbsolutePosition();
+          const distance = Math.sqrt(
+            Math.pow(productPos.x - absolutePos.x, 2) + 
+            Math.pow(productPos.y - absolutePos.y, 2)
+          );
+          
+          // Consider products within 50 pixels as nearby
+          return distance < 50;
+        });
+        
+        if (nearbyProducts.length > 0) {
+          // Group products with the same code
+          const { groupProducts } = usePlanogramStore();
+          
+          // Create an array of product IDs to group
+          const productIds = [props.product.id, ...nearbyProducts.map(p => p.getAttr(ATTR_ID))];
+          
+          // Group the products
+          groupProducts(productIds);
+          
+          // Select all products in the group
+          selectionStore.clearSelection();
+          productIds.forEach(id => selectionStore.toggleSelection(id));
+        }
+      }
+      
       if(positionData.foundProduct || positionData.foundShelf) {
         const { updateProductPosition } = usePlanogramStore()
         updateProductPosition({
@@ -280,6 +397,43 @@ export default defineComponent({
           shelfId: positionData.shelfId,
           sectionId: positionData.sectionId,
         })
+        
+        // If this product is part of a group, update all products in the group
+        if (props.product.groupId) {
+          // Find all products with the same groupId
+          const groupProducts = stage.find((n: Node) => {
+            if (n.getAttr(ATTR_CATEGORY)?.toLowerCase() !== CATEGORY_PRODUCT || 
+                n.getAttr(ATTR_ID) === props.product.id) {
+              return false;
+            }
+            
+            // Check if product has the same groupId
+            const productData = store.products.find(p => p.id === n.getAttr(ATTR_ID));
+            return productData && productData.groupId === props.product.groupId;
+          });
+          
+          // Calculate the movement delta
+          const dx = positionData.x - props.product.x;
+          const dy = positionData.y - props.product.y;
+          
+          // Update all products in the group
+          groupProducts.forEach(groupProduct => {
+            const productId = groupProduct.getAttr(ATTR_ID);
+            const productData = store.products.find(p => p.id === productId);
+            
+            if (productData) {
+              updateProductPosition({
+                id: productId,
+                x: productData.x + dx,
+                y: productData.y + dy,
+                relativeX: productData.relativeX,
+                relativeY: productData.relativeY,
+                shelfId: positionData.shelfId,
+                sectionId: positionData.sectionId,
+              });
+            }
+          });
+        }
       }
 
       emit('dragend', {
@@ -302,19 +456,94 @@ export default defineComponent({
         x: e.target.x(),
         y: e.target.y()
       }
-      selectionStore.selectOne(props.product.id)
+      
+      // If this product is part of a group, select all products in the group
+      if (props.product.groupId) {
+        const stage = e.target.getStage();
+        if (stage) {
+          // Find all products with the same groupId
+          const groupProducts = stage.find((n: Node) => {
+            if (n.getAttr(ATTR_CATEGORY)?.toLowerCase() !== CATEGORY_PRODUCT) {
+              return false;
+            }
+            
+            // Check if product has the same groupId
+            const productData = store.products.find(p => p.id === n.getAttr(ATTR_ID));
+            return productData && productData.groupId === props.product.groupId;
+          });
+          
+          // Select all products in the group
+          selectionStore.clearSelection();
+          groupProducts.forEach(product => {
+            selectionStore.toggleSelection(product.getAttr(ATTR_ID));
+          });
+        }
+      } else {
+        // If not part of a group, just select this product
+        selectionStore.selectOne(props.product.id);
+      }
       
       emit('drag-start', props.product.id)
     }
 
     const handleClick = (e: KonvaEventObject<MouseEvent>) => {
       const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey
-      if (!metaPressed) {
-        selectionStore.selectOne(props.product.id)
+      
+      // If this product is part of a group, handle group selection
+      if (props.product.groupId) {
+        const stage = e.target.getStage();
+        if (stage) {
+          // Find all products with the same groupId
+          const groupProducts = stage.find((n: Node) => {
+            if (n.getAttr(ATTR_CATEGORY)?.toLowerCase() !== CATEGORY_PRODUCT) {
+              return false;
+            }
+            
+            // Check if product has the same groupId
+            const productData = store.products.find(p => p.id === n.getAttr(ATTR_ID));
+            return productData && productData.groupId === props.product.groupId;
+          });
+          
+          // Get all product IDs in the group
+          const groupProductIds = groupProducts.map(p => p.getAttr(ATTR_ID));
+          
+          if (!metaPressed) {
+            // If no modifier key, select only the group
+            selectionStore.clearSelection();
+            groupProductIds.forEach(id => selectionStore.toggleSelection(id));
+          } else {
+            // If modifier key pressed, toggle selection of the group
+            const allSelected = groupProductIds.every(id => 
+              selectionStore.selectedIds.value.includes(id)
+            );
+            
+            if (allSelected) {
+              // If all are selected, deselect all
+              groupProductIds.forEach(id => {
+                if (selectionStore.selectedIds.value.includes(id)) {
+                  selectionStore.toggleSelection(id);
+                }
+              });
+            } else {
+              // If not all are selected, select all
+              groupProductIds.forEach(id => {
+                if (!selectionStore.selectedIds.value.includes(id)) {
+                  selectionStore.toggleSelection(id);
+                }
+              });
+            }
+          }
+        }
       } else {
-        selectionStore.toggleSelection(props.product.id)
+        // If not part of a group, handle normal selection
+        if (!metaPressed) {
+          selectionStore.selectOne(props.product.id);
+        } else {
+          selectionStore.toggleSelection(props.product.id);
+        }
       }
     }
+
 
     return {
       productConfig,

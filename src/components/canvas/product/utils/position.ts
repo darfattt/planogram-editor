@@ -165,10 +165,57 @@ export function calculatePositionData(
   }
 
   if (targetProduct) {
+    console.log("found target product...");
     const positionData = getProductPositionData(targetProduct, productHeight, productGap);
     const group = node as unknown as Group;
-    group.moveTo(positionData.parentGroup);
-    node.position({ x: positionData.relativeX, y: positionData.relativeY });
+    
+    // Check if products have the same code and are on the same shelf
+    const nodeCode = node.getAttr('code');
+    const targetCode = targetProduct.getAttr('code');
+    const targetParent = targetProduct.getParent();
+    const isSameShelf = targetParent && originalParent && targetParent === originalParent;
+    
+    console.log("Node code:", nodeCode);
+    console.log("Target code:", targetCode);
+    console.log("Same shelf:", isSameShelf);
+    
+    if (nodeCode && targetCode && nodeCode === targetCode && isSameShelf) {
+      console.log("Same product code and same shelf - nesting groups");
+      
+      // Cast the target product to a Group
+      const targetGroup = targetProduct as unknown as Group;
+      
+      // Move the dragged product group into the target product group
+      // This creates the nested structure:
+      // <v-group> (target product)
+      //   <v-rect/v-image> (target product content)
+      //   <v-group> (dragged product)
+      //     <v-rect/v-image> (dragged product content)
+      //   </v-group>
+      // </v-group>
+      group.moveTo(targetGroup);
+      
+      return {
+        x: absolutePos.x,
+        y: absolutePos.y,
+        relativeX: positionData.relativeX,
+        relativeY: positionData.relativeY,
+        shelfId: positionData.parentGroup?.getAttr(ATTR_ID),
+        sectionId: positionData.parentGroup?.getAttr(ATTR_SHELF_DATA).sectionId,
+        parentProductId: targetProduct.id(),
+        foundProduct: true
+      };
+    }
+    
+    console.log({node});
+    console.log({targetProduct});
+    console.log(positionData.parentGroup);
+    
+    // For products that don't have the same code, move to the parent group
+    if (positionData.parentGroup) {
+      group.moveTo(positionData.parentGroup);
+      node.position({ x: positionData.relativeX, y: positionData.relativeY });
+    }
     return {
       x: absolutePos.x,
       y: absolutePos.y,
