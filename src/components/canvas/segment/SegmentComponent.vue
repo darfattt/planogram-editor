@@ -6,6 +6,9 @@
     @mouseleave="handleSegmentHoverEnd"
     @click="handleSegmentClick"
   >
+  
+    
+    <!-- Segment rectangle -->
     <v-rect :config="segmentRectConfig" />
     
     <!-- Nested components -->
@@ -17,6 +20,9 @@
       @update-position="handleProductPositionUpdate"
     >
     </ShelfComponent>
+
+    <!-- Base fixture at the bottom -->
+    <v-rect :config="baseConfig" />
   </v-group>
 </template>
 
@@ -75,6 +81,23 @@ export default defineComponent({
       subCategory: 'segment'
     }))
 
+    // Base fixture configuration
+    const baseConfig = computed(() => {
+      const baseWidth = props.segment.width + 20
+      const widthDifference = baseWidth - props.segment.width
+      return {
+        width: baseWidth,
+        height: 20, // Fixed height for base
+        x: -(widthDifference / 2), // Dynamically center based on width difference
+        y: props.segment.height, // Position at bottom of segment
+        fill: '#78909C', // Darker color for base
+        stroke: '#546E7A',
+        strokeWidth: 1,
+        category: 'fixtures',
+        subCategory: 'base'
+      }
+    })
+
     const handleDragMove = () => {
       emit('update-position', props.segment.id)
     }
@@ -114,6 +137,7 @@ export default defineComponent({
     return {
       segmentConfig,
       segmentRectConfig,
+      baseConfig,
       getShelvesBySegment,
       getProductsByShelf,
       handleDragMove,

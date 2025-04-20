@@ -135,6 +135,7 @@ const animate = () => {
 const Z_OFFSET = {
   WALL: -450,
   SEGMENT: -405,     // Segments at the back
+  BASE: -400,        // Base fixtures just in front of segments
   SHELF: -390,       // Shelves closer to segments (partially embedded)
   PRODUCT: -370      // Products in front of shelves
 }
@@ -173,24 +174,54 @@ const createSegment = (segment: Segment) => {
   const { x, y, width, height } = segment
   const depth = 2 // Standard depth for segments
   
-  const geometry = new THREE.BoxGeometry(width, height, depth)
-  const material = new THREE.MeshPhongMaterial({ 
+  // Create segment group to hold both segment and base
+  const segmentGroup = new THREE.Group()
+  segmentGroup.name = `segment-group-${segment.id}`
+  
+  // Create segment mesh
+  const segmentGeometry = new THREE.BoxGeometry(width, height, depth)
+  const segmentMaterial = new THREE.MeshPhongMaterial({ 
     color: 0x303030,
     transparent: true,
     opacity: 0.85,
     shininess: 20
   })
-  const mesh = new THREE.Mesh(geometry, material)
+  const segmentMesh = new THREE.Mesh(segmentGeometry, segmentMaterial)
+  segmentMesh.name = `segment-${segment.id}`
+  segmentMesh.castShadow = true
+  segmentMesh.receiveShadow = true
+  
+  // Create base mesh - matching SegmentComponent.vue configuration
+  const baseWidth = width + 20 // Base is wider than segment by 20
+  const baseHeight = 20 // Fixed height for base
+  const baseDepth = 60 // Fixed depth for base
+  const widthDifference = baseWidth - width
+  const baseGeometry = new THREE.BoxGeometry(baseWidth, baseHeight, baseDepth)
+  const baseMaterial = new THREE.MeshPhongMaterial({ 
+    color: 0x78909C, // Matching the 2D base color
+    transparent: true,
+    opacity: 0.9,
+    shininess: 30
+  })
+  const baseMesh = new THREE.Mesh(baseGeometry, baseMaterial)
+  baseMesh.name = `base-${segment.id}`
+  baseMesh.castShadow = true
+  baseMesh.receiveShadow = true
+  
+  // Position base to match SegmentComponent.vue exactly
+  baseMesh.position.x = -(widthDifference / 2) // Center horizontally like in 2D
+  baseMesh.position.y = height/2 // Position at bottom of segment, matching 2D y position
+  baseMesh.position.z = baseDepth/2 - depth/2 // Extend base forward from segment
+  
+  // Add both meshes to the group
+  segmentGroup.add(segmentMesh)
+  segmentGroup.add(baseMesh)
   
   // Transform coordinates from 2D to 3D
-  const position = transformCoordinates(x, y, width, height, Z_OFFSET.SEGMENT);
-  mesh.position.set(position.x, position.y, position.z);
+  const position = transformCoordinates(x, y, width, height, Z_OFFSET.SEGMENT)
+  segmentGroup.position.set(position.x, position.y, position.z)
   
-  // Add name for debugging
-  mesh.name = `segment-${segment.id}`;
-  mesh.castShadow = true
-  mesh.receiveShadow = true
-  return mesh
+  return segmentGroup
 }
 
 // Create shelf mesh
