@@ -169,33 +169,7 @@ export default defineComponent({
         props.pegboard.height
       )
 
-      if (!foundSegment && originalSegmentId) {
-        // Moving from segment to standalone
-        const originalSegment = segments.find(s => s.id() === originalSegmentId)
-        if (originalSegment) {
-          node.moveTo(originalSegment)
-          node.position({ x: originalX, y: originalY })
-          node.setAttr(ATTR_SEGMENT_ID, originalSegmentId)
-          
-          const segmentPos = originalSegment.absolutePosition()
-          const absoluteX = segmentPos.x + originalX
-          const absoluteY = segmentPos.y + originalY
-          
-          planogramStore.updatePegboardPosition({
-            id: props.pegboard.id,
-            x: absoluteX,
-            y: absoluteY,
-            segmentId: originalSegmentId,
-            relativeX: originalX,
-            relativeY: originalY,
-            products: getProductsForPegboard.value.map(p => ({
-              id: p.id,
-              relativeX: p.relativeX || 0,
-              relativeY: p.relativeY || 0
-            }))
-          })
-        }
-      } else if (foundSegment) {
+      if (foundSegment) {
         // Moving to a segment (either from standalone or another segment)
         const positionUpdate = calculatePegboardPosition(node, foundSegment as Group, pos)
         

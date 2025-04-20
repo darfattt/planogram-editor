@@ -11,6 +11,8 @@ export interface PegboardProps {
     relativeX?: number
     relativeY?: number
     strictPlacement: boolean
+    category: string
+    subCategory: string
   }
 }
 

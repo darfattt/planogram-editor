@@ -166,6 +166,8 @@ export interface Pegboard {
   relativeX?: number
   relativeY?: number
   strictPlacement: boolean
+  category: string
+  subCategory: string
 }
 
 export type PlanogramItem = Segment | Shelf | Product

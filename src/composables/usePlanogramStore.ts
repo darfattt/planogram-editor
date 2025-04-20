@@ -493,7 +493,9 @@ export const usePlanogramStore = defineStore('planogram', {
         segmentId: payload.segmentId || null,
         relativeX: payload.relativeX,
         relativeY: payload.relativeY,
-        strictPlacement: payload.strictPlacement ?? false
+        strictPlacement: payload.strictPlacement ?? false,
+        category: 'fixtures',
+        subCategory: 'pegboard'
       }
       this.pegboards.push(newPegboard)
       this.saveStateToHistory()
