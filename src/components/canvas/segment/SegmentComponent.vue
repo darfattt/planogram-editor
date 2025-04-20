@@ -21,6 +21,14 @@
     >
     </ShelfComponent>
 
+    <!-- Pegboards -->
+    <PegboardComponent
+      v-for="pegboard in getPegboardsBySegment(segment.id)"
+      :key="pegboard.id"
+      :pegboard="pegboard"
+      @update-position="handleFixturePositionUpdate"
+    />
+
     <!-- Base fixture at the bottom -->
     <v-rect :config="baseConfig" />
   </v-group>
@@ -30,6 +38,7 @@
 import { defineComponent, computed } from 'vue'
 import { usePlanogramStore } from '../../../composables/usePlanogramStore'
 import ShelfComponent from '../shelf/ShelfComponent.vue'
+import PegboardComponent from '../pegboard/PegboardComponent.vue'
 import type { Segment } from '../../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { useSelectionStore } from '../../../composables/useSelectionStore'
@@ -39,6 +48,7 @@ export default defineComponent({
   name: 'SegmentComponent',
   components: {
     ShelfComponent,
+    PegboardComponent,
   },
   props: {
     segment: {
@@ -57,7 +67,7 @@ export default defineComponent({
   emits: ['update-position'],
   setup(props, { emit }) {
     const store = usePlanogramStore()
-    const { getShelvesBySegment, getProductsByShelf, updateProductPosition } = store
+    const { getShelvesBySegment, getProductsByShelf, updateProductPosition, getPegboardsBySegment } = store
     const selectionStore = useSelectionStore()
 
     const segmentConfig = computed(() => ({
@@ -134,17 +144,42 @@ export default defineComponent({
       updateProductPosition(payload)
     }
 
+    const handleFixturePositionUpdate = (payload: {
+      id: string
+      x: number
+      y: number
+      relativeX?: number
+      relativeY?: number
+      segmentId?: string | null
+    }) => {
+      store.updatePegboardPosition({
+        id: payload.id,
+        x: payload.x,
+        y: payload.y,
+        segmentId: payload.segmentId || props.segment.id,
+        relativeX: payload.relativeX,
+        relativeY: payload.relativeY,
+        products: store.getProductsForFixture(payload.id).map(p => ({
+          id: p.id,
+          relativeX: p.relativeX || 0,
+          relativeY: p.relativeY || 0
+        }))
+      })
+    }
+
     return {
       segmentConfig,
       segmentRectConfig,
       baseConfig,
       getShelvesBySegment,
       getProductsByShelf,
+      getPegboardsBySegment,
       handleDragMove,
       handleSegmentHover,
       handleSegmentHoverEnd,
       handleSegmentClick,
-      handleProductPositionUpdate
+      handleProductPositionUpdate,
+      handleFixturePositionUpdate
     }
   }
 })

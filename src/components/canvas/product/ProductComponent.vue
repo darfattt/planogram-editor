@@ -59,6 +59,8 @@ import {
   CATEGORY_FIXTURES,
   ATTR_SUB_CATEGORY,
   SUB_CATEGORY_SEGMENT,
+  SUB_CATEGORY_SHELF,
+  SUB_CATEGORY_PEGBOARD,
   ATTR_SEGMENT_ID,
   Y_TOLERANCE
 } from '../shared/constants'
@@ -203,6 +205,12 @@ export default defineComponent({
 
       const { shelves, allProducts } = findElements(stage)
       
+      // Find all pegboards in the stage
+      const pegboards = stage.find((n: Node) => 
+        n.getAttr(ATTR_CATEGORY) === CATEGORY_FIXTURES && 
+        n.getAttr(ATTR_SUB_CATEGORY) === SUB_CATEGORY_PEGBOARD
+      )
+
       // Use Y_TOLERANCE constant for finding target shelf
       const targetShelf = findTargetShelf(
         shelves, 
@@ -219,8 +227,95 @@ export default defineComponent({
         Y_TOLERANCE
       )
 
-      // If we're in a segment but not directly on a shelf, try to find the nearest shelf below
-      if (!targetShelf && !targetProduct) {
+      // Find target pegboard
+      const targetPegboard = pegboards.find(pegboard => {
+        const pegboardPos = pegboard.absolutePosition()
+        const pegboardWidth = pegboard.width()
+        const pegboardHeight = pegboard.height()
+
+        return (
+          absolutePos.x >= pegboardPos.x &&
+          absolutePos.x <= pegboardPos.x + pegboardWidth &&
+          absolutePos.y >= pegboardPos.y &&
+          absolutePos.y <= pegboardPos.y + pegboardHeight
+        )
+      })
+
+      // If we found a pegboard, update product position relative to it
+      if (targetPegboard) {
+        const pegboardPos = targetPegboard.absolutePosition()
+        const relativeX = absolutePos.x - pegboardPos.x
+        const relativeY = absolutePos.y - pegboardPos.y
+
+        // Update product position
+        const { updateProductPosition } = usePlanogramStore()
+        updateProductPosition({
+          id: props.product.id,
+          x: absolutePos.x,
+          y: absolutePos.y,
+          relativeX,
+          relativeY,
+          shelfId: undefined,
+          segmentId: targetPegboard.getAttr(ATTR_SEGMENT_ID),
+          fixtureId: targetPegboard.id()
+        })
+
+        // If this product is part of a group, update all products in the group
+        if (props.product.groupId) {
+          // Find all products with the same groupId
+          const groupProducts = stage.find((n: Node) => {
+            if (n.getAttr(ATTR_CATEGORY)?.toLowerCase() !== CATEGORY_PRODUCT || 
+                n.getAttr(ATTR_ID) === props.product.id) {
+              return false;
+            }
+            
+            // Check if product has the same groupId
+            const productData = store.products.find(p => p.id === n.getAttr(ATTR_ID));
+            return productData && productData.groupId === props.product.groupId;
+          });
+          
+          // Calculate the movement delta
+          const dx = absolutePos.x - props.product.x;
+          const dy = absolutePos.y - props.product.y;
+          
+          // Update all products in the group
+          groupProducts.forEach(groupProduct => {
+            const productId = groupProduct.getAttr(ATTR_ID);
+            const productData = store.products.find(p => p.id === productId);
+            
+            if (productData) {
+              updateProductPosition({
+                id: productId,
+                x: productData.x + dx,
+                y: productData.y + dy,
+                relativeX: productData.relativeX,
+                relativeY: productData.relativeY,
+                shelfId: undefined,
+                segmentId: targetPegboard.getAttr(ATTR_SEGMENT_ID),
+                fixtureId: targetPegboard.id()
+              });
+            }
+          });
+        }
+
+        emit('dragend', {
+          id: props.product.id,
+          parentProductId: null,
+          x: absolutePos.x,
+          y: absolutePos.y,
+          relativeX,
+          relativeY,
+          shelfId: null,
+          segmentId: targetPegboard.getAttr(ATTR_SEGMENT_ID),
+          fixtureId: targetPegboard.id(),
+          foundPegboard: true
+        })
+
+        return
+      }
+
+      // If we're in a segment but not directly on a shelf or pegboard, try to find the nearest shelf below
+      if (!targetShelf && !targetProduct && !targetPegboard) {
         console.log('find nearest shelf...');
         const segments = stage.find((n: Node) => 
           n.getAttr(ATTR_CATEGORY)?.toLowerCase() === CATEGORY_FIXTURES && 
@@ -544,6 +639,25 @@ export default defineComponent({
       }
     }
 
+    interface PositionPayload {
+      x: number
+      y: number
+      relativeX?: number
+      relativeY?: number
+    }
+
+    const updateProductPosition = (payload: PositionPayload) => {
+      store.updateProductPosition({
+        id: props.product.id,
+        x: payload.x,
+        y: payload.y,
+        relativeX: payload.relativeX,
+        relativeY: payload.relativeY,
+        shelfId: props.product.shelfId || undefined,
+        segmentId: props.product.segmentId || undefined,
+        fixtureId: props.product.fixtureId || undefined
+      })
+    }
 
     return {
       productConfig,
@@ -555,7 +669,8 @@ export default defineComponent({
       handleDragStart,
       handleClick,
       showProductImages,
-      imageObj
+      imageObj,
+      updateProductPosition
     }
   }
 })

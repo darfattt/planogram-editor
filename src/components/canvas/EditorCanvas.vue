@@ -32,6 +32,14 @@
         :products="getProductsByShelf(shelf.id)"
         @update-position="handleProductPositionUpdate"
       />
+
+      <!-- Render pegboards that are not in segments -->
+      <PegboardComponent
+        v-for="pegboard in standaloneFixtures.pegboards"
+        :key="pegboard.id"
+        :pegboard="pegboard"
+        @update-position="handleFixturePositionUpdate"
+      />
     </v-layer>
   </v-stage>
 </template>
@@ -48,6 +56,7 @@ import type { Segment, DraggedItem, Shelf } from '../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { useSelectionStore } from '../../composables/useSelectionStore'
 import { storeToRefs } from 'pinia'
+import PegboardComponent from './pegboard/PegboardComponent.vue'
 
 export default defineComponent({
   name: 'EditorCanvas',
@@ -56,11 +65,12 @@ export default defineComponent({
     ShelfComponent,
     ProductComponent,
     SegmentComponent,
+    PegboardComponent,
   },
   setup(props, { emit }) {
     const store = usePlanogramStore()
-    const { segments, shelves, products, standaloneProducts, standaloneShelves } = storeToRefs(store)
-    const { getProductsByShelf, initializeTestData, addProduct, updateProductPosition, updateSegmentPosition } = store
+    const { segments, shelves, products, standaloneProducts, standaloneShelves, standaloneFixtures } = storeToRefs(store)
+    const { getProductsByShelf, initializeTestData, addProduct, updateProductPosition, updateSegmentPosition, getProductsForFixture } = store
 
     const { stageRef } = useDragAndDrop()
     const debugStore = useDebugStore()
@@ -110,36 +120,49 @@ export default defineComponent({
       emit('dragover', e)
     }
 
-    const handleDrop = (e: KonvaEventObject<DragEvent>) => {
-      e.evt.preventDefault()
-      try {
-        const type = e.evt.dataTransfer?.getData('text/plain')
-        if (type !== 'product') return
-        
-        const data = e.evt.dataTransfer?.getData('application/json')
-        if (!data) return
-
-        const item = JSON.parse(data) as DraggedItem
-        const stage = stageRef.value?.getStage()
-        const pos = stage?.getPointerPosition()
-        if (!pos) return
-
-        if (item.type === 'product') {
-          addProduct({
-            x: pos.x - item.properties.width/2,
-            y: pos.y - item.properties.height/2,
-            width: item.properties.width,
-            height: item.properties.height,
-            depth: item.properties.depth,
-            relativeX: 0,
-            relativeY: 0,
-            code: item.code ?? `PROD-${Date.now().toString().slice(-4)}`
-          })
-        }
-      } catch (error) {
-        console.error('Drop error:', error)
+    const handleDrop = (e: DragEvent) => {
+      if (!e.dataTransfer) return
+      
+      const data = e.dataTransfer.getData('text/plain')
+      if (!data) return
+      
+      const dropData = JSON.parse(data)
+      const stage = stageRef.value?.getStage()
+      if (!stage) return
+      
+      const pos = stage.getPointerPosition()
+      if (!pos) return
+      
+      if (dropData.type === 'shelf') {
+        store.addShelf({
+          x: pos.x,
+          y: pos.y,
+          width: 100,
+          height: 40,
+          depth: 30,
+          strictPlacement: true
+        })
+      } else if (dropData.type === 'pegboard') {
+        store.addPegboard({
+          x: pos.x,
+          y: pos.y,
+          width: 150,
+          height: 200,
+          depth: 20,
+          color: '#e0e0e0',
+          strictPlacement: false
+        })
+      } else if (dropData.type === 'product') {
+        store.addProduct({
+          x: pos.x,
+          y: pos.y,
+          width: 30,
+          height: 40,
+          depth: 20,
+          color: '#ff0000',
+          type: 'product'
+        })
       }
-      emit('drop', e)
     }
 
     const handleStageClick = (e: KonvaEventObject<MouseEvent>) => {
@@ -147,6 +170,30 @@ export default defineComponent({
       if (e.target === e.target.getStage()) {
         selectionStore.clearSelection()
       }
+    }
+
+    const handleFixturePositionUpdate = (payload: {
+      id: string
+      x: number
+      y: number
+      relativeX?: number
+      relativeY?: number
+      segmentId?: string | null
+    }) => {
+      // Update the fixture position in the store
+      store.updatePegboardPosition({
+        id: payload.id,
+        x: payload.x,
+        y: payload.y,
+        segmentId: payload.segmentId,
+        relativeX: payload.relativeX,
+        relativeY: payload.relativeY,
+        products: store.getProductsForFixture(payload.id).map(p => ({
+          id: p.id,
+          relativeX: p.relativeX || 0,
+          relativeY: p.relativeY || 0
+        }))
+      })
     }
 
     return {
@@ -157,13 +204,16 @@ export default defineComponent({
       products,
       standaloneProducts,
       standaloneShelves,
+      standaloneFixtures,
       getProductsByShelf,
+      getProductsForFixture,
       updateSegmentPosition,
       handleDragOver,
       handleDrop,
       handleMouseMove,
       handleStageClick,
-      handleProductPositionUpdate
+      handleProductPositionUpdate,
+      handleFixturePositionUpdate
     }
   }
 })
