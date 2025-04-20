@@ -9,28 +9,15 @@
     v-bind="$attrs"
   >
     <v-layer>
-      <!-- Sections -->
-        <v-group
-        v-for="section in sections"
-        :key="section.id"
-        :config="sectionConfig(section)"
-        @dragmove="updateSectionPosition(section.id)"
-        @mouseenter="handleSectionHover"
-        @mouseleave="handleSectionHoverEnd"
-        @click="handleSectionClick"
-      >
-        <v-rect :config="sectionRectConfig(section)" />
-        
-        <!-- Nested components -->
-        <ShelfComponent
-          v-for="shelf in getShelvesBySection(section.id)"
-          :key="shelf.id"
-          :shelf="shelf"
-          :products="getProductsByShelf(shelf.id)"
-          @update-position="handleProductPositionUpdate"
-        >
-        </ShelfComponent>
-        </v-group>
+      <!-- Segments -->
+      <SegmentComponent
+        v-for="segment in segments"
+        :key="segment.id"
+        :segment="segment"
+        :stage-width="stageConfig.width"
+        :stage-height="stageConfig.height"
+        @update-position="updateSegmentPosition"
+      />
 
       <!-- Standalone Products -->
       <ProductComponent
@@ -39,13 +26,12 @@
         :product="product"
       />
       <ShelfComponent
-          v-for="shelf in standaloneShelves"
-          :key="shelf.id"
-          :shelf="shelf"
-          :products="getProductsByShelf(shelf.id)"
-          @update-position="handleProductPositionUpdate"
-        >
-        </ShelfComponent>
+        v-for="shelf in standaloneShelves"
+        :key="shelf.id"
+        :shelf="shelf"
+        :products="getProductsByShelf(shelf.id)"
+        @update-position="handleProductPositionUpdate"
+      />
     </v-layer>
   </v-stage>
 </template>
@@ -54,11 +40,11 @@
 import { defineComponent } from 'vue'
 import { usePlanogramStore } from '../../composables/usePlanogramStore'
 import useDragAndDrop from '../../composables/useDragAndDrop'
-import ShelfComponent from '../../components/canvas/shelf/ShelfComponent.vue'
-import ProductComponent from '../../components/canvas/product/ProductComponent.vue'
-import { v4 as uuidv4 } from 'uuid'
+import ShelfComponent from './shelf/ShelfComponent.vue'
+import ProductComponent from './product/ProductComponent.vue'
+import SegmentComponent from './segment/SegmentComponent.vue'
 import { useDebugStore } from '../../composables/useDebugStore'
-import type { Section, DraggedItem, Shelf } from '../../types'
+import type { Segment, DraggedItem, Shelf } from '../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { useSelectionStore } from '../../composables/useSelectionStore'
 import { storeToRefs } from 'pinia'
@@ -69,11 +55,12 @@ export default defineComponent({
   components: {
     ShelfComponent,
     ProductComponent,
+    SegmentComponent,
   },
   setup(props, { emit }) {
     const store = usePlanogramStore()
-    const { sections, shelves, products, standaloneProducts,standaloneShelves } = storeToRefs(store)
-    const { getShelvesBySection, getProductsBySection, getProductsByShelf, initializeTestData, addProduct, updateProductPosition } = store
+    const { segments, shelves, products, standaloneProducts, standaloneShelves } = storeToRefs(store)
+    const { getProductsByShelf, initializeTestData, addProduct, updateProductPosition, updateSegmentPosition } = store
 
     const { stageRef } = useDragAndDrop()
     const debugStore = useDebugStore()
@@ -88,13 +75,10 @@ export default defineComponent({
       }
     }
 
-    if (sections.value.length === 0) {
-       // Initialize test data on component mount
-        initializeTestData()
-      }
-
-    // Add cache map at the top of setup
-    const shelfPositionCache = new Map<string, { x: number; y: number }>()
+    if (segments.value.length === 0) {
+      // Initialize test data on component mount
+      initializeTestData()
+    }
 
     // Update mouse move handler
     const handleMouseMove = (e: KonvaEventObject<PointerEvent>) => {
@@ -111,51 +95,6 @@ export default defineComponent({
       debugStore.updateCoordinates(pos)
     }
 
-    const sectionConfig = (section: Section) => ({
-      id: section.id,
-      x: section.x,
-      y: section.y,
-      draggable: true,
-      category: 'fixtures',
-      subCategory: 'section',
-      width: section.width,
-      height: section.height,
-    })
-
-    const sectionRectConfig = (section: Section) => ({
-      width: section.width,
-      height: section.height,
-      fill: '#BBDEFB',
-      stroke: '#2196f3',
-      strokeWidth: 2,
-      category: 'fixtures',
-      subCategory: 'section'
-    })
-
-    const updateSectionPosition = (sectionId: string) => {
-      const section = sections.value.find((sec: Section) => sec.id === sectionId)
-      if (!section || !stageRef.value) return
-      
-      const group = stageRef.value.getStage().findOne(`#${sectionId}`)
-      if (!group) return
-
-      // Enforce canvas boundaries
-      const maxX = stageConfig.width - section.width
-      const maxY = stageConfig.height - section.height
-      const newX = Math.max(0, Math.min(group.x(), maxX))
-      const newY = Math.max(0, Math.min(group.y(), maxY))
-
-      group.x(newX)
-      group.y(newY)
-      
-      // Use store method to update section position to ensure history tracking
-      store.updateSectionPosition({
-        id: sectionId,
-        x: newX,
-        y: newY
-      })
-    }
-
     const handleProductPositionUpdate = (payload: {
       id: string
       x: number
@@ -163,28 +102,7 @@ export default defineComponent({
       relativeX?: number
       relativeY?: number
     }) => {
-      console.log('handle Product Position update');
       updateProductPosition(payload)
-    }
-
-    const updateShelfPosition = (payload: {
-      id: string
-      x: number
-      y: number
-      products: Array<{
-        id: string
-        relativeX: number
-        relativeY: number
-      }>
-    }) => {
-      const shelf = shelves.value.find((s: Shelf) => s.id === payload.id)
-      if (!shelf || !stageRef.value) return
-      
-      const group = stageRef.value.getStage().findOne(`#${payload.id}`)
-      if (!group) return
-      
-      // Use store method to update shelf position to ensure history tracking
-      store.updateShelfPosition(payload)
     }
 
     const handleDragOver = (e: KonvaEventObject<DragEvent>) => {
@@ -224,39 +142,6 @@ export default defineComponent({
       emit('drop', e)
     }
 
-    const handleSectionHover = (e: KonvaEventObject<MouseEvent>) => {
-      if (stageRef.value?.getStage()) {
-        stageRef.value.getStage().container().style.cursor = 'grab'
-      }
-    }
-
-    const handleSectionHoverEnd = (e: KonvaEventObject<MouseEvent>) => {
-      if (stageRef.value?.getStage()) {
-        stageRef.value.getStage().container().style.cursor = 'default'
-      }
-    }
-
-    const handleProductDetach = ({ productId, absoluteX, absoluteY }: { 
-      productId: string;
-      absoluteX: number;
-      absoluteY: number;
-    }) => {
-      convertToStandaloneProduct(productId, absoluteX, absoluteY)
-    }
-
-    const convertToStandaloneProduct = (productId: string, x: number, y: number) => {
-      const product = products.value.find(p => p.id === productId)
-      if (product) {
-        // Use store method to update product position to ensure history tracking
-        updateProductPosition({
-          id: productId,
-          x: x,
-          y: y,
-          shelfId: undefined
-        })
-      }
-    }
-
     const handleStageClick = (e: KonvaEventObject<MouseEvent>) => {
       // Clear selection when clicking empty canvas
       if (e.target === e.target.getStage()) {
@@ -264,45 +149,20 @@ export default defineComponent({
       }
     }
 
-    const handleSectionClick = (e: KonvaEventObject<MouseEvent>) => {
-      e.cancelBubble = true // Stop event from reaching stage
-      
-      if (e.target.attrs.category === 'fixtures') {
-        selectionStore.clearSelection()
-      }
-    }
-
-    const handleShelfClick = (e: KonvaEventObject<MouseEvent>) => {
-      e.cancelBubble = true // Stop event from reaching section/stage
-      //selectionStore.clearSelection()
-      //todo select shelf
-    }
-
     return {
       stageRef,
       stageConfig,
-      sections,
+      segments,
       shelves,
       products,
       standaloneProducts,
       standaloneShelves,
-      getShelvesBySection,
-      getProductsBySection,
       getProductsByShelf,
-      sectionConfig,
-      sectionRectConfig,
-      updateSectionPosition,
-      updateProductPosition,
-      updateShelfPosition,
+      updateSegmentPosition,
       handleDragOver,
       handleDrop,
       handleMouseMove,
-      handleSectionHover,
-      handleSectionHoverEnd,
-      handleProductDetach,
       handleStageClick,
-      handleSectionClick,
-      handleShelfClick,
       handleProductPositionUpdate
     }
   }

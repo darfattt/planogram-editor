@@ -10,13 +10,13 @@ export interface Size {
 }
 
 export interface DraggedItem {
-  type: 'section' | 'shelf' | 'product'
+  type: 'segment' | 'shelf' | 'product'
   properties: Size
   position?: Position
   code?: string
 }
 
-export interface Section {
+export interface Segment {
   id: string
   x: number
   y: number
@@ -25,7 +25,7 @@ export interface Section {
   name?: string
   category: string
   subCategory: string
-  // Add other section properties as needed
+  // Add other segment properties as needed
 }
 
 export interface Shelf {
@@ -35,7 +35,7 @@ export interface Shelf {
   width: number
   height: number
   depth: number
-  sectionId?: string | null
+  segmentId?: string | null
   relativeX?: number | 0
   relativeY?: number | 0
   category: string
@@ -52,7 +52,7 @@ export interface Product {
   width: number
   height: number
   depth: number
-  sectionId?: string | null
+  segmentId?: string | null
   shelfId?: string | null
   relativeX?: number
   relativeY?: number
@@ -149,4 +149,4 @@ export interface ProductPhysical {
   };
 }
 
-export type PlanogramItem = Section | Shelf | Product
+export type PlanogramItem = Segment | Shelf | Product

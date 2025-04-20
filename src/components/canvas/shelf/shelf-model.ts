@@ -33,7 +33,7 @@ export interface ShelfConfig {
   strokeWidth: number
   category: string
   subCategory: string
-  sectionId: string | null | undefined
+  segmentId: string | null | undefined
   strictPlacement?: boolean
 }
 
@@ -48,11 +48,11 @@ export interface ShelfPosition {
   }>
 }
 
-export interface SectionBounds {
-  sectionX: number
-  sectionY: number
-  sectionWidth: number
-  sectionHeight: number
+export interface SegmentBounds {
+  segmentX: number
+  segmentY: number
+  segmentWidth: number
+  segmentHeight: number
   shelfWidth: number
   shelfHeight: number
 }
@@ -64,9 +64,9 @@ export interface ShelfBounds {
   shelfBottom: number
 }
 
-export interface SectionIntersection {
-  sectionRight: number
-  sectionBottom: number
+export interface SegmentIntersegment {
+  segmentRight: number
+  segmentBottom: number
 }
 
 export interface ShelfPositionUpdate {
@@ -74,5 +74,5 @@ export interface ShelfPositionUpdate {
   y: number
   relativeX?: number
   relativeY?: number
-  sectionId?: string | null
+  segmentId?: string | null
 }

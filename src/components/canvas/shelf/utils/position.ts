@@ -3,11 +3,11 @@ import {
   ATTR_ID,
   ATTR_X,
   ATTR_Y,
-  ATTR_SECTION_ID
+  ATTR_SEGMENT_ID
 } from '../../shared/constants'
 
 export interface ShelfPositionUpdate {
-  sectionId: string
+  segmentId: string
   x: number
   y: number
   relativeX: number
@@ -16,29 +16,29 @@ export interface ShelfPositionUpdate {
 
 export function calculateShelfPosition(
   node: Node,
-  section: Node,
+  segment: Node,
   pos: { x: number; y: number }
 ): ShelfPositionUpdate {
-  const sectionX = section.x()
-  const sectionY = section.y()
+  const segmentX = segment.x()
+  const segmentY = segment.y()
   
-  // Always align to left (x: 0) when in a section
+  // Always align to left (x: 0) when in a segment
   const relativeX = 0
-  const relativeY = pos.y - sectionY
+  const relativeY = pos.y - segmentY
   
-  // Move shelf to section and set position
-  node.moveTo(section)
+  // Move shelf to segment and set position
+  node.moveTo(segment)
   node.position({
     x: relativeX,
     y: relativeY
   })
   
-  // Set the section ID attribute
-  node.setAttr(ATTR_SECTION_ID, section.id())
+  // Set the segment ID attribute
+  node.setAttr(ATTR_SEGMENT_ID, segment.id())
 
   return {
-    sectionId: section.id(),
-    x: sectionX,
+    segmentId: segment.id(),
+    x: segmentX,
     y: pos.y,
     relativeX: relativeX,
     relativeY: relativeY

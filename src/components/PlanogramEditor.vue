@@ -15,11 +15,11 @@
         <!-- <button @click="open2DView">2D View</button>
         <button @click="open3DView">3D View</button> -->
       </div>
-      <div class="template-section">
+      <div class="template-segment">
         <h3>Fixtures Template</h3>
         <FixtureTemplate @dragstart="handleDragStart" />
       </div>
-      <div class="template-section">
+      <div class="template-segment">
         <h3>Products Template</h3>
         <ProductTemplate 
           @dragstart="handleDragStart"
@@ -41,7 +41,7 @@ import { defineComponent, ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import FixtureTemplate from './templates/FixtureTemplate.vue'
 import ProductTemplate from './templates/ProductTemplate.vue'
 import WorkspaceView from './workspace/WorkspaceView.vue'
-import type { DraggedItem, Product, Section, Shelf } from '../types'
+import type { DraggedItem, Product, Segment, Shelf } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import Konva from 'konva'
 import { usePlanogramStore } from '../composables/usePlanogramStore'
@@ -61,13 +61,13 @@ export default defineComponent({
     const nodes = ref<any[]>([])
     const store = usePlanogramStore()
     const { addProduct } = store
-    const { sections, shelves, products, showProductImages } = storeToRefs(store)
+    const { segments, shelves, products, showProductImages } = storeToRefs(store)
     const workspaceRef = ref<InstanceType<typeof WorkspaceView> | null>(null)
     const showUndoNotification = ref(false)
     
     // Initialize with test data only if no data exists
     onMounted(() => {
-      if (sections.value.length === 0) {
+      if (segments.value.length === 0) {
         //initializeTestData()
       }
       
@@ -143,7 +143,7 @@ export default defineComponent({
     const handleSave = () => {
       // Create state data object
       const stateData = {
-        sections: sections.value,
+        segments: segments.value,
         shelves: shelves.value,
         products: products.value,
         nodes: nodes.value
@@ -180,26 +180,26 @@ export default defineComponent({
             const jsonData = JSON.parse(e.target?.result as string)
             
             // Clear existing data
-            sections.value.length = 0
+            segments.value.length = 0
             shelves.value.length = 0
             products.value.length = 0
             nodes.value.length = 0
 
             // Update store state with new data
-            const newSections = jsonData.sections.map((section: Section) => ({
-              ...section,
-              x: section.x || 0,
-              y: section.y || 0
+            const newSegments = jsonData.segments.map((segment: Segment) => ({
+              ...segment,
+              x: segment.x || 0,
+              y: segment.y || 0
             }))
-            sections.value.push(...newSections)
+            segments.value.push(...newSegments)
 
             // Update shelves with proper positioning
             const newShelves = jsonData.shelves.map((shelf: Shelf) => {
-              const parentSection = sections.value.find((s: Section) => s.id === shelf.sectionId)
+              const parentSegment = segments.value.find((s: Segment) => s.id === shelf.segmentId)
               return {
                 ...shelf,
-                x: parentSection ? parentSection.x + (shelf.relativeX || 0) : shelf.x || 0,
-                y: parentSection ? parentSection.y + (shelf.relativeY || 0) : shelf.y || 0
+                x: parentSegment ? parentSegment.x + (shelf.relativeX || 0) : shelf.x || 0,
+                y: parentSegment ? parentSegment.y + (shelf.relativeY || 0) : shelf.y || 0
               }
             })
             shelves.value.push(...newShelves)
@@ -207,13 +207,13 @@ export default defineComponent({
             // Update products with proper positioning
             const newProducts = jsonData.products.map((product: Product) => {
               const parentShelf = shelves.value.find((s: Shelf) => s.id === product.shelfId)
-              const parentSection = sections.value.find((s: Section) => s.id === product.sectionId)
+              const parentSegment = segments.value.find((s: Segment) => s.id === product.segmentId)
               return {
                 ...product,
                 x: parentShelf ? parentShelf.x + (product.relativeX || 0) : 
-                   parentSection ? parentSection.x + (product.relativeX || 0) : product.x || 0,
+                   parentSegment ? parentSegment.x + (product.relativeX || 0) : product.x || 0,
                 y: parentShelf ? parentShelf.y + (product.relativeY || 0) : 
-                   parentSection ? parentSection.y + (product.relativeY || 0) : product.y || 0
+                   parentSegment ? parentSegment.y + (product.relativeY || 0) : product.y || 0
               }
             })
             products.value.push(...newProducts)
@@ -292,11 +292,11 @@ export default defineComponent({
   background-color: #1976d2;
 }
 
-.template-section {
+.template-segment {
   margin-bottom: 20px;
 }
 
-.template-section h3 {
+.template-segment h3 {
   margin-bottom: 10px;
   color: #333;
 }

@@ -1,8 +1,8 @@
 <template>
   <div class="fixture-template">
-    <div class="template-item" @click="addSectionToCanvas">
-      <button class="add-button" @click.stop.prevent="addSectionToCanvas"></button>
-      <span>Add Section</span>
+    <div class="template-item" @click="addSegmentToCanvas">
+      <button class="add-button" @click.stop.prevent="addSegmentToCanvas"></button>
+      <span>Add Segment</span>
     </div>
     <div class="template-item" @click="addShelfToCanvas">
       <button class="add-button" @click.stop.prevent="addShelfToCanvas"></button>
@@ -20,8 +20,8 @@ export default defineComponent({
   setup() {
     const planogramStore = usePlanogramStore()
 
-    const addSectionToCanvas = () => {
-      planogramStore.addSection({
+    const addSegmentToCanvas = () => {
+      planogramStore.addSegment({
         x: 0,
         y: 100,
         width: 400,
@@ -41,7 +41,7 @@ export default defineComponent({
     }
 
     return {
-      addSectionToCanvas,
+      addSegmentToCanvas,
       addShelfToCanvas
     }
   }
@@ -74,7 +74,7 @@ export default defineComponent({
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.section-preview {
+.segment-preview {
   width: 100px;
   height: 60px;
   background: #e0e0e0;

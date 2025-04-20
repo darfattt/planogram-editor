@@ -25,7 +25,7 @@ export interface DragEndEventData {
   relativeX: number
   relativeY: number
   shelfId?: string
-  sectionId?: string
+  segmentId?: string
   foundProduct?: boolean
   foundShelf?: boolean
 }
@@ -50,7 +50,7 @@ export interface PositionData {
   relativeX: number
   relativeY: number
   shelfId?: string
-  sectionId?: string
+  segmentId?: string
   parentProductId?: string
   foundProduct?: boolean
   foundShelf?: boolean

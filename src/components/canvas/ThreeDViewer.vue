@@ -7,7 +7,7 @@ import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { usePlanogramStore } from '../../composables/usePlanogramStore'
-import type { Shelf, Product, Section } from '../../types'
+import type { Shelf, Product, Segment } from '../../types'
 
 const container = ref<HTMLDivElement | null>(null)
 const planogramStore = usePlanogramStore()
@@ -134,8 +134,8 @@ const animate = () => {
 // Constants for z-index layering
 const Z_OFFSET = {
   WALL: -450,
-  SECTION: -405,     // Sections at the back
-  SHELF: -390,       // Shelves closer to sections (partially embedded)
+  SEGMENT: -405,     // Segments at the back
+  SHELF: -390,       // Shelves closer to segments (partially embedded)
   PRODUCT: -370      // Products in front of shelves
 }
 
@@ -168,10 +168,10 @@ const transformCoordinates = (x: number, y: number, width: number, height: numbe
   return { x: centerX, y: centerY, z: centerZ };
 }
 
-// Create section mesh
-const createSection = (section: Section) => {
-  const { x, y, width, height } = section
-  const depth = 2 // Standard depth for sections
+// Create segment mesh
+const createSegment = (segment: Segment) => {
+  const { x, y, width, height } = segment
+  const depth = 2 // Standard depth for segments
   
   const geometry = new THREE.BoxGeometry(width, height, depth)
   const material = new THREE.MeshPhongMaterial({ 
@@ -183,11 +183,11 @@ const createSection = (section: Section) => {
   const mesh = new THREE.Mesh(geometry, material)
   
   // Transform coordinates from 2D to 3D
-  const position = transformCoordinates(x, y, width, height, Z_OFFSET.SECTION);
+  const position = transformCoordinates(x, y, width, height, Z_OFFSET.SEGMENT);
   mesh.position.set(position.x, position.y, position.z);
   
   // Add name for debugging
-  mesh.name = `section-${section.id}`;
+  mesh.name = `segment-${segment.id}`;
   mesh.castShadow = true
   mesh.receiveShadow = true
   return mesh
@@ -195,7 +195,7 @@ const createSection = (section: Section) => {
 
 // Create shelf mesh
 const createShelf = (shelf: Shelf) => {
-  const { x, y, width, height, depth = 50, sectionId, relativeX, relativeY } = shelf
+  const { x, y, width, height, depth = 50, segmentId, relativeX, relativeY } = shelf
   
   const geometry = new THREE.BoxGeometry(width, height, depth)
   const material = new THREE.MeshPhongMaterial({ 
@@ -206,27 +206,27 @@ const createShelf = (shelf: Shelf) => {
   })
   const mesh = new THREE.Mesh(geometry, material)
   
-  // If shelf is in a section, use its relative position
+  // If shelf is in a segment, use its relative position
   let shelfX = x;
   let shelfY = y;
   
-  if (sectionId) {
-    // Find the parent section
-    const parentSection = planogramStore.sections.find(s => s.id === sectionId);
-    if (parentSection && relativeX !== undefined && relativeY !== undefined) {
-      // Use the section's position plus the shelf's relative position
-      shelfX = parentSection.x + relativeX;
-      shelfY = parentSection.y + relativeY;
+  if (segmentId) {
+    // Find the parent segment
+    const parentSegment = planogramStore.segments.find(s => s.id === segmentId);
+    if (parentSegment && relativeX !== undefined && relativeY !== undefined) {
+      // Use the segment's position plus the shelf's relative position
+      shelfX = parentSegment.x + relativeX;
+      shelfY = parentSegment.y + relativeY;
     }
   }
   
   // Transform coordinates from 2D to 3D
   const position = transformCoordinates(shelfX, shelfY, width, height, Z_OFFSET.SHELF);
   
-  // If shelf is in a section, adjust Z position to embed it into the section
-  if (sectionId) {
-    // Adjust Z position to embed shelf into section by the section depth
-    position.z += 10; // Move shelf into the section by section depth (10)
+  // If shelf is in a segment, adjust Z position to embed it into the segment
+  if (segmentId) {
+    // Adjust Z position to embed shelf into segment by the segment depth
+    position.z += 10; // Move shelf into the segment by segment depth (10)
   }
   
   mesh.position.set(position.x, position.y, position.z);
@@ -240,7 +240,7 @@ const createShelf = (shelf: Shelf) => {
 
 // Create product mesh
 const createProduct = (product: Product) => {
-  const { x, y, width, height, depth, shelfId, sectionId, relativeX, relativeY } = product
+  const { x, y, width, height, depth, shelfId, segmentId, relativeX, relativeY } = product
   
   const geometry = new THREE.BoxGeometry(width, height, depth)
   const material = new THREE.MeshPhongMaterial({ 
@@ -259,12 +259,12 @@ const createProduct = (product: Product) => {
     // Product is on a shelf
     const parentShelf = planogramStore.shelves.find(s => s.id === shelfId);
     if (parentShelf && relativeX !== undefined && relativeY !== undefined) {
-      // If shelf is in a section, use section position + shelf relative + product relative
-      if (parentShelf.sectionId) {
-        const parentSection = planogramStore.sections.find(s => s.id === parentShelf.sectionId);
-        if (parentSection && parentShelf.relativeX !== undefined && parentShelf.relativeY !== undefined) {
-          productX = parentSection.x + parentShelf.relativeX + relativeX;
-          productY = parentSection.y + parentShelf.relativeY + relativeY;
+      // If shelf is in a segment, use segment position + shelf relative + product relative
+      if (parentShelf.segmentId) {
+        const parentSegment = planogramStore.segments.find(s => s.id === parentShelf.segmentId);
+        if (parentSegment && parentShelf.relativeX !== undefined && parentShelf.relativeY !== undefined) {
+          productX = parentSegment.x + parentShelf.relativeX + relativeX;
+          productY = parentSegment.y + parentShelf.relativeY + relativeY;
         }
       } else {
         // Shelf is standalone
@@ -272,12 +272,12 @@ const createProduct = (product: Product) => {
         productY = parentShelf.y + relativeY;
       }
     }
-  } else if (sectionId) {
-    // Product is directly in a section
-    const parentSection = planogramStore.sections.find(s => s.id === sectionId);
-    if (parentSection && relativeX !== undefined && relativeY !== undefined) {
-      productX = parentSection.x + relativeX;
-      productY = parentSection.y + relativeY;
+  } else if (segmentId) {
+    // Product is directly in a segment
+    const parentSegment = planogramStore.segments.find(s => s.id === segmentId);
+    if (parentSegment && relativeX !== undefined && relativeY !== undefined) {
+      productX = parentSegment.x + relativeX;
+      productY = parentSegment.y + relativeY;
     }
   }
   
@@ -288,9 +288,9 @@ const createProduct = (product: Product) => {
   if (shelfId) {
     // Adjust Z position to place product slightly in front of shelf
     position.z -= 5; // Move product slightly in front of shelf
-  } else if (sectionId) {
-    // If product is directly in a section, embed it by the section depth
-    position.z += 10; // Move product into the section by section depth (10)
+  } else if (segmentId) {
+    // If product is directly in a segment, embed it by the segment depth
+    position.z += 10; // Move product into the segment by segment depth (10)
   }
   
   mesh.position.set(position.x, position.y, position.z);
@@ -315,9 +315,9 @@ const updateScene = () => {
     child instanceof THREE.Light
   )
 
-  // First add all sections (back layer)
-  planogramStore.sections.forEach(section => {
-    scene.add(createSection(section))
+  // First add all segments (back layer)
+  planogramStore.segments.forEach(segment => {
+    scene.add(createSegment(segment))
   })
 
   // Then add all shelves (middle layer)
@@ -332,7 +332,7 @@ const updateScene = () => {
   
   // Log scene structure for debugging
   console.log('3D Scene updated with:', {
-    sections: planogramStore.sections.length,
+    segments: planogramStore.segments.length,
     shelves: planogramStore.shelves.length,
     products: planogramStore.products.length,
     viewport: {
@@ -343,7 +343,7 @@ const updateScene = () => {
 }
 
 // Watch for changes in planogram data
-watch(() => planogramStore.sections, () => {
+watch(() => planogramStore.segments, () => {
   nextTick(() => {
     updateScene();
   });

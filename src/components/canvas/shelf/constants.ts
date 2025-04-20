@@ -9,8 +9,8 @@ export const SHELF_STYLES = {
 // Constants for collision detection and positioning
 export const SHELF_CATEGORY = 'fixtures'
 export const SHELF_SUB_CATEGORY = 'shelf'
-export const SECTION_CATEGORY = 'fixtures'
-export const SECTION_SUB_CATEGORY = 'section'
+export const SEGMENT_CATEGORY = 'fixtures'
+export const SEGMENT_SUB_CATEGORY = 'segment'
 
-// Default position when no section is found
+// Default position when no segment is found
 export const DEFAULT_POSITION = { x: 0, y: 0 }

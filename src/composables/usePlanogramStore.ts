@@ -1,17 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
-import type { Section, Shelf, Product } from '../types'
+import type { Segment, Shelf, Product } from '../types'
 
 // Define a type for the state history
 interface PlanogramState {
-  sections: Section[]
+  segments: Segment[]
   shelves: Shelf[]
   products: Product[]
 }
 
 export const usePlanogramStore = defineStore('planogram', () => {
-  const sections = ref<Section[]>([])
+  const segments = ref<Segment[]>([])
   const shelves = ref<Shelf[]>([])
   const products = ref<Product[]>([])
   const showProductImages = ref(true)
@@ -22,35 +22,35 @@ export const usePlanogramStore = defineStore('planogram', () => {
 
   // Keep the computed properties inside the function
   const standaloneProducts = computed(() => 
-    products.value.filter(p => !p.sectionId && !p.shelfId)
+    products.value.filter(p => !p.segmentId && !p.shelfId)
   )
 
   const standaloneShelves = computed(() => 
-    shelves.value.filter(s => !s.sectionId)
+    shelves.value.filter(s => !s.segmentId)
   )
 
-  const getShelvesBySection = (sectionId: string) => 
-    shelves.value.filter(s => s.sectionId === sectionId)
+  const getShelvesBySegment = (segmentId: string) => 
+    shelves.value.filter(s => s.segmentId === segmentId)
 
-  const getProductsBySection = (sectionId: string) => 
-    products.value.filter(p => p.sectionId === sectionId)
+  const getProductsBySegment = (segmentId: string) => 
+    products.value.filter(p => p.segmentId === segmentId)
 
   const getProductsByShelf = (shelfId: string) => 
     products.value.filter(p => p.shelfId === shelfId)
 
   const initializeTestData = () => {
-    // Test Section centered on canvas
-    const testSection = {
-      id: "section1",
-      x: (window.innerWidth - 60 - 400) / 2, // Center horizontally (canvas width - section width) / 2
-      y: (window.innerHeight - 60 - 600) / 2, // Center vertically (canvas height - section height) / 2
+    // Test Segment centered on canvas
+    const testSegment = {
+      id: "segment1",
+      x: (window.innerWidth - 60 - 400) / 2, // Center horizontally (canvas width - segment width) / 2
+      y: (window.innerHeight - 60 - 600) / 2, // Center vertically (canvas height - segment height) / 2
       width: 400,
       height: 600,
-      name: 'Test Section',
+      name: 'Test Segment',
       category: 'fixtures',
-      subCategory: 'section'
+      subCategory: 'segment'
     }
-    sections.value.push(testSection)
+    segments.value.push(testSegment)
 
     // Test Shelf
     const testShelf = {
@@ -62,7 +62,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
       width: 400,
       height: 10,
       depth: 50,
-      sectionId: testSection.id,
+      segmentId: testSegment.id,
       category: 'fixtures',
       subCategory: 'shelf',
       strictPlacement: true // Enable strict placement for this shelf
@@ -76,7 +76,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
       width: 400,
       height: 10,
       depth: 50,
-      sectionId: testSection.id,
+      segmentId: testSegment.id,
       category: 'fixtures',
       subCategory: 'shelf',
       strictPlacement: true // Enable strict placement for this shelf
@@ -90,7 +90,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
       width: 400,
       height: 10,
       depth: 50,
-      sectionId: testSection.id,
+      segmentId: testSegment.id,
       category: 'fixtures',
       subCategory: 'shelf',
       strictPlacement: true // Disable strict placement for this shelf (for comparison)
@@ -111,7 +111,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     //   width: 50,
     //   height: 50,
     //   depth: 50,
-    //   sectionId: testSection.id,
+    //   segmentId: testSegment.id,
     //   shelfId: testShelf.id,
     //   category: 'product',
     //   type: 'Food',
@@ -154,20 +154,20 @@ export const usePlanogramStore = defineStore('planogram', () => {
     const shelf = shelves.value.find(s => s.id === payload.id)
     if (!shelf) return
 
-    // Handle section grouping logic here
-    const section = sections.value.find(s => 
+    // Handle segment grouping logic here
+    const segment = segments.value.find(s => 
       payload.x >= s.x &&
       payload.x <= s.x + s.width &&
       payload.y >= s.y &&
       payload.y <= s.y + s.height
     )
 
-    if (section) {
-      shelf.sectionId = section.id
-      shelf.relativeX = payload.x - section.x
-      shelf.relativeY = payload.y - section.y
+    if (segment) {
+      shelf.segmentId = segment.id
+      shelf.relativeX = payload.x - segment.x
+      shelf.relativeY = payload.y - segment.y
     } else {
-      shelf.sectionId = null
+      shelf.segmentId = null
     }
   }
 
@@ -179,7 +179,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     depth: number
     color?: string
     shelfId?: string
-    sectionId?: string
+    segmentId?: string
     relativeX?: number
     relativeY?: number
     type?: string
@@ -197,7 +197,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
       relativeX: payload.relativeX ?? (payload.shelfId ? payload.x : 0),
       relativeY: payload.relativeY ?? (payload.shelfId ? payload.y : 0),
       shelfId: payload.shelfId,
-      sectionId: payload.sectionId,
+      segmentId: payload.segmentId,
       type: payload.type || 'Food',
       color: payload.color || '#81C784',
       category: 'product',
@@ -216,7 +216,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     relativeX?: number
     relativeY?: number
     shelfId?: string
-    sectionId?: string,
+    segmentId?: string,
   }) => {
     const index = products.value.findIndex(p => p.id === payload.id)
     if (index === -1) return
@@ -229,7 +229,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
       relativeX: payload.relativeX ?? currentProduct.relativeX,
       relativeY: payload.relativeY ?? currentProduct.relativeY,
       shelfId: payload.shelfId,
-      sectionId: payload.sectionId,
+      segmentId: payload.segmentId,
       type: currentProduct.type,
       color: currentProduct.color,
       category: currentProduct.category,
@@ -255,24 +255,24 @@ export const usePlanogramStore = defineStore('planogram', () => {
     }
   }
 
-  const addSection = (payload: {
+  const addSegment = (payload: {
     x: number
     y: number
     width: number
     height: number
   }) => {
-    const newSection: Section = {
+    const newSegment: Segment = {
       id: uuidv4(),
       x: payload.x,
       y: payload.y,
       width: payload.width,
       height: payload.height,
-      name: 'New Section',
+      name: 'New Segment',
       category: 'fixtures',
-      subCategory: 'section'
+      subCategory: 'segment'
     }
-    sections.value.push(newSection)
-    return newSection
+    segments.value.push(newSegment)
+    return newSegment
   }
 
   const addShelf = (payload: {
@@ -281,7 +281,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     width: number
     height: number
     depth : number
-    sectionId?: string
+    segmentId?: string
     relativeX?: number
     relativeY?: number
     strictPlacement?: boolean
@@ -293,7 +293,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
       width: payload.width,
       height: payload.height,
       depth: payload.depth,
-      sectionId: payload.sectionId,
+      segmentId: payload.segmentId,
       relativeX: payload.relativeX ?? 0,
       relativeY: payload.relativeY ?? 0,
       category: 'fixtures',
@@ -304,27 +304,27 @@ export const usePlanogramStore = defineStore('planogram', () => {
     return newShelf
   }
   
-  const updateSectionPosition = (payload: {
+  const updateSegmentPosition = (payload: {
     id: string
     x: number
     y: number
   }) => {
-    const section = sections.value.find(s => s.id === payload.id)
-    if (!section) return
+    const segment = segments.value.find(s => s.id === payload.id)
+    if (!segment) return
     
-    section.x = payload.x
-    section.y = payload.y
+    segment.x = payload.x
+    segment.y = payload.y
     
-    // Update positions of shelves within this section
-    const sectionShelves = shelves.value.filter(s => s.sectionId === payload.id)
-    sectionShelves.forEach(shelf => {
+    // Update positions of shelves within this segment
+    const segmentShelves = shelves.value.filter(s => s.segmentId === payload.id)
+    segmentShelves.forEach(shelf => {
       shelf.x = payload.x + (shelf.relativeX || 0)
       shelf.y = payload.y + (shelf.relativeY || 0)
     })
     
-    // Update positions of products directly in this section
-    const sectionProducts = products.value.filter(p => p.sectionId === payload.id && !p.shelfId)
-    sectionProducts.forEach(product => {
+    // Update positions of products directly in this segment
+    const segmentProducts = products.value.filter(p => p.segmentId === payload.id && !p.shelfId)
+    segmentProducts.forEach(product => {
       product.x = payload.x + (product.relativeX || 0)
       product.y = payload.y + (product.relativeY || 0)
     })
@@ -334,7 +334,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
   const saveStateToHistory = () => {
     // Create a deep copy of the current state
     const currentState: PlanogramState = {
-      sections: JSON.parse(JSON.stringify(sections.value)),
+      segments: JSON.parse(JSON.stringify(segments.value)),
       shelves: JSON.parse(JSON.stringify(shelves.value)),
       products: JSON.parse(JSON.stringify(products.value))
     }
@@ -360,7 +360,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     
     if (previousState) {
       // Restore the previous state
-      sections.value = previousState.sections
+      segments.value = previousState.segments
       shelves.value = previousState.shelves
       products.value = previousState.products
       return true
@@ -370,13 +370,13 @@ export const usePlanogramStore = defineStore('planogram', () => {
   }
   
   // Create wrapped versions of state-changing methods that save history before changes
-  const wrappedUpdateSectionPosition = (payload: {
+  const wrappedUpdateSegmentPosition = (payload: {
     id: string
     x: number
     y: number
   }) => {
     saveStateToHistory()
-    return updateSectionPosition(payload)
+    return updateSegmentPosition(payload)
   }
   
   const wrappedAddProduct = (payload: {
@@ -387,7 +387,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     depth: number
     color?: string
     shelfId?: string
-    sectionId?: string
+    segmentId?: string
     relativeX?: number
     relativeY?: number
     type?: string
@@ -405,7 +405,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     relativeX?: number
     relativeY?: number
     shelfId?: string
-    sectionId?: string,
+    segmentId?: string,
   }) => {
     saveStateToHistory()
     return updateProductPosition(payload)
@@ -421,14 +421,14 @@ export const usePlanogramStore = defineStore('planogram', () => {
     return deleteShelf(shelfId)
   }
   
-  const wrappedAddSection = (payload: {
+  const wrappedAddSegment = (payload: {
     x: number
     y: number
     width: number
     height: number
   }) => {
     saveStateToHistory()
-    return addSection(payload)
+    return addSegment(payload)
   }
   
   const wrappedAddShelf = (payload: {
@@ -437,7 +437,7 @@ export const usePlanogramStore = defineStore('planogram', () => {
     width: number
     height: number,
     depth : number,
-    sectionId?: string
+    segmentId?: string
     relativeX?: number
     relativeY?: number
     strictPlacement?: boolean
@@ -505,14 +505,14 @@ export const usePlanogramStore = defineStore('planogram', () => {
   }
 
   return {
-    sections,
+    segments,
     shelves,
     products,
     showProductImages,
     standaloneProducts,
     standaloneShelves,
-    getShelvesBySection,
-    getProductsBySection,
+    getShelvesBySegment,
+    getProductsBySegment,
     getProductsByShelf,
     initializeTestData,
     // Return wrapped functions instead of originals
@@ -522,9 +522,9 @@ export const usePlanogramStore = defineStore('planogram', () => {
     updateProductPosition: wrappedUpdateProductPosition,
     deleteProduct: wrappedDeleteProduct,
     deleteShelf: wrappedDeleteShelf,
-    addSection: wrappedAddSection,
+    addSegment: wrappedAddSegment,
     addShelf: wrappedAddShelf,
-    updateSectionPosition: wrappedUpdateSectionPosition,
+    updateSegmentPosition: wrappedUpdateSegmentPosition,
     groupProducts: wrappedGroupProducts,
     undo // Export the undo function
   }

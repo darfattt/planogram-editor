@@ -7,7 +7,7 @@ import {
   ATTR_X,
   ATTR_Y,
   ATTR_ID,
-  ATTR_SECTION_ID,
+  ATTR_SEGMENT_ID,
   ATTR_CATEGORY,
   ATTR_WIDTH
 } from '../../shared/constants'
@@ -159,7 +159,7 @@ export function calculatePositionData(
       relativeX: positionData.relativeX,
       relativeY: positionData.relativeY,
       shelfId: positionData.shelfData.id,
-      sectionId: positionData.shelfData.sectionId,
+      segmentId: positionData.shelfData.segmentId,
       foundShelf: true
     };
   }
@@ -201,7 +201,7 @@ export function calculatePositionData(
         relativeX: positionData.relativeX,
         relativeY: positionData.relativeY,
         shelfId: positionData.parentGroup?.getAttr(ATTR_ID),
-        sectionId: positionData.parentGroup?.getAttr(ATTR_SHELF_DATA).sectionId,
+        segmentId: positionData.parentGroup?.getAttr(ATTR_SHELF_DATA).segmentId,
         parentProductId: targetProduct.id(),
         foundProduct: true
       };
@@ -222,7 +222,7 @@ export function calculatePositionData(
       relativeX: positionData.relativeX,
       relativeY: positionData.relativeY,
       shelfId: positionData.parentGroup?.getAttr(ATTR_ID),
-      sectionId: positionData.parentGroup?.getAttr(ATTR_SHELF_DATA).sectionId,
+      segmentId: positionData.parentGroup?.getAttr(ATTR_SHELF_DATA).segmentId,
       parentProductId: targetProduct.id(),
       foundProduct: true
     };

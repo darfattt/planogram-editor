@@ -10,8 +10,8 @@ export default function useDragAndDrop() {
     return node?.getAbsolutePosition() || { x: 0, y: 0 }
   }
 
-  const findSectionAtPosition = (pos: Position, sections: any[]) => {
-    return sections.find(s => 
+  const findSegmentAtPosition = (pos: Position, segments: any[]) => {
+    return segments.find(s => 
       pos.x >= s.x && 
       pos.x <= s.x + s.width &&
       pos.y >= s.y && 
@@ -25,6 +25,6 @@ export default function useDragAndDrop() {
   return {
     stageRef,
     getAbsolutePosition,
-    findSectionAtPosition
+    findSegmentAtPosition
   }
 } 
