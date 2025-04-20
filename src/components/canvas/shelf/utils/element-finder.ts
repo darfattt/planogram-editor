@@ -3,37 +3,37 @@ import type { Stage } from 'konva/lib/Stage'
 import { 
   NODE_TYPE_GROUP,
   CATEGORY_FIXTURES,
-  SUB_CATEGORY_SECTION,
+  SUB_CATEGORY_SEGMENT,
   ATTR_CATEGORY,
   ATTR_SUB_CATEGORY,
   ATTR_WIDTH,
   ATTR_HEIGHT
 } from '../../shared/constants'
 import type { 
-  SectionBounds, 
+  SegmentBounds, 
   ShelfBounds, 
-  SectionIntersection 
+  SegmentIntersegment 
 } from '../shelf-model'
 
-export function findSections(stage: Stage): Node[] {
+export function findSegments(stage: Stage): Node[] {
   return stage.find((node: Node) => 
     node.getType() === NODE_TYPE_GROUP && 
     node.getAttr(ATTR_CATEGORY) === CATEGORY_FIXTURES && 
-    node.getAttr(ATTR_SUB_CATEGORY) === SUB_CATEGORY_SECTION
+    node.getAttr(ATTR_SUB_CATEGORY) === SUB_CATEGORY_SEGMENT
   )
 }
 
-export function checkSectionIntersection(
+export function checkSegmentIntersegment(
   pos: { x: number; y: number },
-  section: Node,
+  segment: Node,
   shelfWidth: number,
   shelfHeight: number
 ): boolean {
-  const bounds: SectionBounds = {
-    sectionX: section.x(),
-    sectionY: section.y(),
-    sectionWidth: section.getAttr(ATTR_WIDTH),
-    sectionHeight: section.getAttr(ATTR_HEIGHT),
+  const bounds: SegmentBounds = {
+    segmentX: segment.x(),
+    segmentY: segment.y(),
+    segmentWidth: segment.getAttr(ATTR_WIDTH),
+    segmentHeight: segment.getAttr(ATTR_HEIGHT),
     shelfWidth,
     shelfHeight
   }
@@ -45,28 +45,28 @@ export function checkSectionIntersection(
     shelfBottom: pos.y + bounds.shelfHeight
   }
   
-  const intersection: SectionIntersection = {
-    sectionRight: bounds.sectionX + bounds.sectionWidth,
-    sectionBottom: bounds.sectionY + bounds.sectionHeight
+  const intersegment: SegmentIntersegment = {
+    segmentRight: bounds.segmentX + bounds.segmentWidth,
+    segmentBottom: bounds.segmentY + bounds.segmentHeight
   }
 
   return (
-    shelfBounds.shelfLeft < intersection.sectionRight &&
-    shelfBounds.shelfRight > bounds.sectionX &&
-    shelfBounds.shelfTop < intersection.sectionBottom &&
-    shelfBounds.shelfBottom > bounds.sectionY
+    shelfBounds.shelfLeft < intersegment.segmentRight &&
+    shelfBounds.shelfRight > bounds.segmentX &&
+    shelfBounds.shelfTop < intersegment.segmentBottom &&
+    shelfBounds.shelfBottom > bounds.segmentY
   )
 }
 
-export function findIntersectingSection(
-  sections: Node[],
+export function findIntersectingSegment(
+  segments: Node[],
   pos: { x: number; y: number },
   shelfWidth: number,
   shelfHeight: number
 ): Node | null {
-  for (const section of sections) {
-    if (checkSectionIntersection(pos, section, shelfWidth, shelfHeight)) {
-      return section
+  for (const segment of segments) {
+    if (checkSegmentIntersegment(pos, segment, shelfWidth, shelfHeight)) {
+      return segment
     }
   }
   return null

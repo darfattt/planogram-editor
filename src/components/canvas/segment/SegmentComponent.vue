@@ -1,16 +1,16 @@
 <template>
   <v-group
-    :config="sectionConfig"
+    :config="segmentConfig"
     @dragmove="handleDragMove"
-    @mouseenter="handleSectionHover"
-    @mouseleave="handleSectionHoverEnd"
-    @click="handleSectionClick"
+    @mouseenter="handleSegmentHover"
+    @mouseleave="handleSegmentHoverEnd"
+    @click="handleSegmentClick"
   >
-    <v-rect :config="sectionRectConfig" />
+    <v-rect :config="segmentRectConfig" />
     
     <!-- Nested components -->
     <ShelfComponent
-      v-for="shelf in getShelvesBySection(section.id)"
+      v-for="shelf in getShelvesBySegment(segment.id)"
       :key="shelf.id"
       :shelf="shelf"
       :products="getProductsByShelf(shelf.id)"
@@ -24,19 +24,19 @@
 import { defineComponent, computed } from 'vue'
 import { usePlanogramStore } from '../../../composables/usePlanogramStore'
 import ShelfComponent from '../shelf/ShelfComponent.vue'
-import type { Section } from '../../../types'
+import type { Segment } from '../../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { useSelectionStore } from '../../../composables/useSelectionStore'
 import { storeToRefs } from 'pinia'
 
 export default defineComponent({
-  name: 'SectionComponent',
+  name: 'SegmentComponent',
   components: {
     ShelfComponent,
   },
   props: {
-    section: {
-      type: Object as () => Section,
+    segment: {
+      type: Object as () => Segment,
       required: true
     },
     stageWidth: {
@@ -51,49 +51,49 @@ export default defineComponent({
   emits: ['update-position'],
   setup(props, { emit }) {
     const store = usePlanogramStore()
-    const { getShelvesBySection, getProductsByShelf, updateProductPosition } = store
+    const { getShelvesBySegment, getProductsByShelf, updateProductPosition } = store
     const selectionStore = useSelectionStore()
 
-    const sectionConfig = computed(() => ({
-      id: props.section.id,
-      x: props.section.x,
-      y: props.section.y,
+    const segmentConfig = computed(() => ({
+      id: props.segment.id,
+      x: props.segment.x,
+      y: props.segment.y,
       draggable: true,
       category: 'fixtures',
-      subCategory: 'section',
-      width: props.section.width,
-      height: props.section.height,
+      subCategory: 'segment',
+      width: props.segment.width,
+      height: props.segment.height,
     }))
 
-    const sectionRectConfig = computed(() => ({
-      width: props.section.width,
-      height: props.section.height,
+    const segmentRectConfig = computed(() => ({
+      width: props.segment.width,
+      height: props.segment.height,
       fill: '#BBDEFB',
       stroke: '#2196f3',
       strokeWidth: 2,
       category: 'fixtures',
-      subCategory: 'section'
+      subCategory: 'segment'
     }))
 
     const handleDragMove = () => {
-      emit('update-position', props.section.id)
+      emit('update-position', props.segment.id)
     }
 
-    const handleSectionHover = (e: KonvaEventObject<MouseEvent>) => {
+    const handleSegmentHover = (e: KonvaEventObject<MouseEvent>) => {
       const stage = e.target.getStage()
       if (stage) {
         stage.container().style.cursor = 'grab'
       }
     }
 
-    const handleSectionHoverEnd = (e: KonvaEventObject<MouseEvent>) => {
+    const handleSegmentHoverEnd = (e: KonvaEventObject<MouseEvent>) => {
       const stage = e.target.getStage()
       if (stage) {
         stage.container().style.cursor = 'default'
       }
     }
 
-    const handleSectionClick = (e: KonvaEventObject<MouseEvent>) => {
+    const handleSegmentClick = (e: KonvaEventObject<MouseEvent>) => {
       e.cancelBubble = true // Stop event from reaching stage
       
       if (e.target.attrs.category === 'fixtures') {
@@ -112,14 +112,14 @@ export default defineComponent({
     }
 
     return {
-      sectionConfig,
-      sectionRectConfig,
-      getShelvesBySection,
+      segmentConfig,
+      segmentRectConfig,
+      getShelvesBySegment,
       getProductsByShelf,
       handleDragMove,
-      handleSectionHover,
-      handleSectionHoverEnd,
-      handleSectionClick,
+      handleSegmentHover,
+      handleSegmentHoverEnd,
+      handleSegmentClick,
       handleProductPositionUpdate
     }
   }

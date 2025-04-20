@@ -2,14 +2,14 @@
   <v-group
     :config="{
       id: shelf.id,
-      x: shelf.sectionId ? shelf.relativeX : shelf.x,
-      y: shelf.sectionId ? shelf.relativeY : shelf.y,
+      x: shelf.segmentId ? shelf.relativeX : shelf.x,
+      y: shelf.segmentId ? shelf.relativeY : shelf.y,
       draggable: true,
       category: CATEGORY_FIXTURES,
       subCategory: SUB_CATEGORY_SHELF,
       width: shelf.width,
       height: shelf.height,
-      sectionId: shelf.sectionId? shelf.sectionId : null,
+      segmentId: shelf.segmentId? shelf.segmentId : null,
       shelfData: {
         ...shelf,
         strictPlacement: shelf.strictPlacement
@@ -48,10 +48,10 @@ import {
 import {
   CATEGORY_FIXTURES,
   SUB_CATEGORY_SHELF,
-  SUB_CATEGORY_SECTION,
+  SUB_CATEGORY_SEGMENT,
   ATTR_CATEGORY,
   ATTR_SUB_CATEGORY,
-  ATTR_SECTION_ID,
+  ATTR_SEGMENT_ID,
   NODE_TYPE_RECT,
   ATTR_ID
 } from '../shared/constants'
@@ -62,8 +62,8 @@ import type {
   ShelfConfig
 } from './shelf-model'
 import { 
-  findSections,
-  findIntersectingSection 
+  findSegments,
+  findIntersectingSegment 
 } from './utils/element-finder'
 import {
   calculateShelfPosition,
@@ -97,7 +97,7 @@ export default defineComponent({
       height: props.shelf.height,
       depth: props.shelf.depth,
       ...SHELF_STYLES,
-      sectionId: props.shelf.sectionId,
+      segmentId: props.shelf.segmentId,
       strictPlacement: props.shelf.strictPlacement
     }
 
@@ -120,42 +120,42 @@ export default defineComponent({
       const stage = node.getStage();
       if (!stage) return
 
-      // Store original position before checking for sections
-      const originalX = props.shelf.sectionId ? (props.shelf.relativeX ?? 0) : (props.shelf.x ?? 0)
-      const originalY = props.shelf.sectionId ? (props.shelf.relativeY ?? 0) : (props.shelf.y ?? 0)
-      const originalSectionId = props.shelf.sectionId
+      // Store original position before checking for segments
+      const originalX = props.shelf.segmentId ? (props.shelf.relativeX ?? 0) : (props.shelf.x ?? 0)
+      const originalY = props.shelf.segmentId ? (props.shelf.relativeY ?? 0) : (props.shelf.y ?? 0)
+      const originalSegmentId = props.shelf.segmentId
 
-      const sections = findSections(stage)
-      const foundSection = findIntersectingSection(
-        sections,
+      const segments = findSegments(stage)
+      const foundSegment = findIntersectingSegment(
+        segments,
         pos,
         props.shelf.width,
         props.shelf.height
       )
 
-      // If the shelf is already in a section and we're not finding a new section,
-      // we should keep it in the original section
-      if (!foundSection && originalSectionId) {
-        console.log(`Shelf ${props.shelf.id} is not within any section, reverting to original section ${originalSectionId}`)
+      // If the shelf is already in a segment and we're not finding a new segment,
+      // we should keep it in the original segment
+      if (!foundSegment && originalSegmentId) {
+        console.log(`Shelf ${props.shelf.id} is not within any segment, reverting to original segment ${originalSegmentId}`)
         
-        // Find the original section
-        const originalSection = sections.find(s => s.id() === originalSectionId)
-        if (originalSection) {
-          // Move back to original section
-          node.moveTo(originalSection)
+        // Find the original segment
+        const originalSegment = segments.find(s => s.id() === originalSegmentId)
+        if (originalSegment) {
+          // Move back to original segment
+          node.moveTo(originalSegment)
 
           node.position({
             x: originalX,
             y: originalY
           })
-          node.setAttr(ATTR_SECTION_ID, originalSectionId)
+          node.setAttr(ATTR_SEGMENT_ID, originalSegmentId)
           
-          // Get the absolute position of the original section
-          const sectionPos = originalSection.absolutePosition()
+          // Get the absolute position of the original segment
+          const segmentPos = originalSegment.absolutePosition()
           
-          // Calculate the absolute position of the shelf within the section
-          const absoluteX = sectionPos.x + originalX
-          const absoluteY = sectionPos.y + originalY
+          // Calculate the absolute position of the shelf within the segment
+          const absoluteX = segmentPos.x + originalX
+          const absoluteY = segmentPos.y + originalY
           
           // // Update store with original position
           planogramStore.updateShelfPosition({
@@ -177,7 +177,7 @@ export default defineComponent({
             products: props.products
           })
         } else {
-          // If original section not found, just update position
+          // If original segment not found, just update position
           planogramStore.updateShelfPosition({
             id: props.shelf.id,
             x: props.shelf.x,
@@ -190,10 +190,10 @@ export default defineComponent({
           })
         }
       } 
-      // If we found a section (either the same one or a new one)
-      else if (foundSection) {
-        console.log(`Shelf ${props.shelf.id} is inside section ${foundSection.id()}`)
-        const positionUpdate = calculateShelfPosition(node, foundSection, pos)
+      // If we found a segment (either the same one or a new one)
+      else if (foundSegment) {
+        console.log(`Shelf ${props.shelf.id} is inside segment ${foundSegment.id()}`)
+        const positionUpdate = calculateShelfPosition(node, foundSegment, pos)
         
         // Log the position update for debugging
         console.log('Position update:', positionUpdate)
@@ -218,16 +218,16 @@ export default defineComponent({
           products: props.products
         })
         
-        // Manually set the section ID and relative position on the node
-        node.setAttr(ATTR_SECTION_ID, foundSection.id())
+        // Manually set the segment ID and relative position on the node
+        node.setAttr(ATTR_SEGMENT_ID, foundSegment.id())
         node.position({
           x: positionUpdate.relativeX,
           y: positionUpdate.relativeY
         })
       } 
-      // If the shelf is not in any section and wasn't in a section before
+      // If the shelf is not in any segment and wasn't in a segment before
       else {
-        console.log(`Shelf ${props.shelf.id} is not within any section and was not in a section before`)
+        console.log(`Shelf ${props.shelf.id} is not within any segment and was not in a segment before`)
         
         // For standalone shelves, update position
         planogramStore.updateShelfPosition({
@@ -249,8 +249,8 @@ export default defineComponent({
           products: props.products
         })
         
-        // Clear section ID for standalone shelf
-        node.setAttr(ATTR_SECTION_ID, null)
+        // Clear segment ID for standalone shelf
+        node.setAttr(ATTR_SEGMENT_ID, null)
       }
     }
 

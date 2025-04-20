@@ -5,7 +5,7 @@ import {
   NODE_TYPE_GROUP,
   CATEGORY_FIXTURES,
   CATEGORY_PRODUCT,
-  SUB_CATEGORY_SECTION,
+  SUB_CATEGORY_SEGMENT,
   SUB_CATEGORY_SHELF,
   ATTR_CATEGORY,
   ATTR_SUB_CATEGORY,
@@ -20,14 +20,14 @@ export interface ElementFinderResult {
 }
 
 export function findElements(stage: Stage): ElementFinderResult {
-  const sections = stage.find((node: Node) => 
+  const segments = stage.find((node: Node) => 
     node.getType() === NODE_TYPE_GROUP && 
     node.getAttr(ATTR_CATEGORY) === CATEGORY_FIXTURES && 
-    node.getAttr(ATTR_SUB_CATEGORY) === SUB_CATEGORY_SECTION
+    node.getAttr(ATTR_SUB_CATEGORY) === SUB_CATEGORY_SEGMENT
   )
 
-  const shelves = sections.flatMap(section => 
-    (section as Group).getChildren(child => 
+  const shelves = segments.flatMap(segment => 
+    (segment as Group).getChildren(child => 
       child.getAttr(ATTR_CATEGORY) === CATEGORY_FIXTURES && 
       child.getAttr(ATTR_SUB_CATEGORY) === SUB_CATEGORY_SHELF
     )

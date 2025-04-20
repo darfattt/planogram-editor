@@ -58,8 +58,8 @@ import {
   ATTR_ID,
   CATEGORY_FIXTURES,
   ATTR_SUB_CATEGORY,
-  SUB_CATEGORY_SECTION,
-  ATTR_SECTION_ID,
+  SUB_CATEGORY_SEGMENT,
+  ATTR_SEGMENT_ID,
   Y_TOLERANCE
 } from '../shared/constants'
 import type { 
@@ -219,30 +219,30 @@ export default defineComponent({
         Y_TOLERANCE
       )
 
-      // If we're in a section but not directly on a shelf, try to find the nearest shelf below
+      // If we're in a segment but not directly on a shelf, try to find the nearest shelf below
       if (!targetShelf && !targetProduct) {
         console.log('find nearest shelf...');
-        const sections = stage.find((n: Node) => 
+        const segments = stage.find((n: Node) => 
           n.getAttr(ATTR_CATEGORY)?.toLowerCase() === CATEGORY_FIXTURES && 
-          n.getAttr(ATTR_SUB_CATEGORY)?.toLowerCase() === SUB_CATEGORY_SECTION
+          n.getAttr(ATTR_SUB_CATEGORY)?.toLowerCase() === SUB_CATEGORY_SEGMENT
         )
         
-        // Check if we're inside any section
-        for (const section of sections) {
-          const sectionBox = section.getClientRect()
+        // Check if we're inside any segment
+        for (const segment of segments) {
+          const segmentBox = segment.getClientRect()
           if (
-            absolutePos.x >= sectionBox.x && 
-            absolutePos.x <= sectionBox.x + sectionBox.width &&
-            absolutePos.y >= sectionBox.y && 
-            absolutePos.y <= sectionBox.y + sectionBox.height
+            absolutePos.x >= segmentBox.x && 
+            absolutePos.x <= segmentBox.x + segmentBox.width &&
+            absolutePos.y >= segmentBox.y && 
+            absolutePos.y <= segmentBox.y + segmentBox.height
           ) {
-            // We're inside a section, find the nearest shelf below
-            const sectionShelves = shelves.filter(shelf => 
-              shelf.getAttr(ATTR_SECTION_ID) === section.id()
+            // We're inside a segment, find the nearest shelf below
+            const segmentShelves = shelves.filter(shelf => 
+              shelf.getAttr(ATTR_SEGMENT_ID) === segment.id()
             )
             
             // Sort shelves by y position (top to bottom)
-            const sortedShelves = [...sectionShelves].sort((a, b) => a.y() - b.y())
+            const sortedShelves = [...segmentShelves].sort((a, b) => a.y() - b.y())
             
             // Find the first shelf that's below our current position
             const nearestShelfBelow = sortedShelves.find(shelf => 
@@ -270,7 +270,7 @@ export default defineComponent({
                 relativeX: positionData.relativeX,
                 relativeY: positionData.relativeY,
                 shelfId: positionData.shelfId,
-                sectionId: positionData.sectionId,
+                segmentId: positionData.segmentId,
               })
               
               // If this product is part of a group, update all products in the group
@@ -304,7 +304,7 @@ export default defineComponent({
                       relativeX: productData.relativeX,
                       relativeY: productData.relativeY,
                       shelfId: positionData.shelfId,
-                      sectionId: positionData.sectionId,
+                      segmentId: positionData.segmentId,
                     });
                   }
                 });
@@ -395,7 +395,7 @@ export default defineComponent({
           relativeX: positionData.relativeX,
           relativeY: positionData.relativeY,
           shelfId: positionData.shelfId,
-          sectionId: positionData.sectionId,
+          segmentId: positionData.segmentId,
         })
         
         // If this product is part of a group, update all products in the group
@@ -429,7 +429,7 @@ export default defineComponent({
                 relativeX: productData.relativeX,
                 relativeY: productData.relativeY,
                 shelfId: positionData.shelfId,
-                sectionId: positionData.sectionId,
+                segmentId: positionData.segmentId,
               });
             }
           });

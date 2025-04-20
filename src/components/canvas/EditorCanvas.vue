@@ -9,14 +9,14 @@
     v-bind="$attrs"
   >
     <v-layer>
-      <!-- Sections -->
-      <SectionComponent
-        v-for="section in sections"
-        :key="section.id"
-        :section="section"
+      <!-- Segments -->
+      <SegmentComponent
+        v-for="segment in segments"
+        :key="segment.id"
+        :segment="segment"
         :stage-width="stageConfig.width"
         :stage-height="stageConfig.height"
-        @update-position="updateSectionPosition"
+        @update-position="updateSegmentPosition"
       />
 
       <!-- Standalone Products -->
@@ -42,9 +42,9 @@ import { usePlanogramStore } from '../../composables/usePlanogramStore'
 import useDragAndDrop from '../../composables/useDragAndDrop'
 import ShelfComponent from './shelf/ShelfComponent.vue'
 import ProductComponent from './product/ProductComponent.vue'
-import SectionComponent from './section/SectionComponent.vue'
+import SegmentComponent from './segment/SegmentComponent.vue'
 import { useDebugStore } from '../../composables/useDebugStore'
-import type { Section, DraggedItem, Shelf } from '../../types'
+import type { Segment, DraggedItem, Shelf } from '../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { useSelectionStore } from '../../composables/useSelectionStore'
 import { storeToRefs } from 'pinia'
@@ -55,12 +55,12 @@ export default defineComponent({
   components: {
     ShelfComponent,
     ProductComponent,
-    SectionComponent,
+    SegmentComponent,
   },
   setup(props, { emit }) {
     const store = usePlanogramStore()
-    const { sections, shelves, products, standaloneProducts, standaloneShelves } = storeToRefs(store)
-    const { getProductsByShelf, initializeTestData, addProduct, updateProductPosition, updateSectionPosition } = store
+    const { segments, shelves, products, standaloneProducts, standaloneShelves } = storeToRefs(store)
+    const { getProductsByShelf, initializeTestData, addProduct, updateProductPosition, updateSegmentPosition } = store
 
     const { stageRef } = useDragAndDrop()
     const debugStore = useDebugStore()
@@ -75,7 +75,7 @@ export default defineComponent({
       }
     }
 
-    if (sections.value.length === 0) {
+    if (segments.value.length === 0) {
       // Initialize test data on component mount
       initializeTestData()
     }
@@ -152,13 +152,13 @@ export default defineComponent({
     return {
       stageRef,
       stageConfig,
-      sections,
+      segments,
       shelves,
       products,
       standaloneProducts,
       standaloneShelves,
       getProductsByShelf,
-      updateSectionPosition,
+      updateSegmentPosition,
       handleDragOver,
       handleDrop,
       handleMouseMove,

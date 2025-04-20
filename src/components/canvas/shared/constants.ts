@@ -4,7 +4,7 @@ export const CATEGORY_FIXTURES = 'fixtures'
 
 // Sub-category constants
 export const SUB_CATEGORY_SHELF = 'shelf'
-export const SUB_CATEGORY_SECTION = 'section'
+export const SUB_CATEGORY_SEGMENT = 'segment'
 
 // Node type constants
 export const NODE_TYPE_GROUP = 'Group'
@@ -16,7 +16,7 @@ export const ATTR_SUB_CATEGORY = 'subCategory'
 export const ATTR_ID = 'id'
 export const ATTR_WIDTH = 'width'
 export const ATTR_HEIGHT = 'height'
-export const ATTR_SECTION_ID = 'sectionId'
+export const ATTR_SEGMENT_ID = 'segmentId'
 export const ATTR_SHELF_DATA = 'shelfData'
 export const ATTR_X = 'x'
 export const ATTR_Y = 'y'
