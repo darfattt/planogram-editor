@@ -12,6 +12,12 @@
         <button @click="showProductImages = !showProductImages">
           {{ showProductImages ? 'Hide' : 'Show' }} Images
         </button>
+        <div class="zoom-controls">
+          <button @click="globalZoomOut" title="Zoom Out">-</button>
+          <span class="zoom-level">{{ Math.round(globalZoomLevel * 100) }}%</span>
+          <button @click="globalZoomIn" title="Zoom In">+</button>
+          <button @click="resetGlobalZoom" title="Reset Zoom">100%</button>
+        </div>
         <!-- <button @click="open2DView">2D View</button>
         <button @click="open3DView">3D View</button> -->
       </div>
@@ -64,6 +70,7 @@ export default defineComponent({
     const { segments, shelves, products, showProductImages } = storeToRefs(store)
     const workspaceRef = ref<InstanceType<typeof WorkspaceView> | null>(null)
     const showUndoNotification = ref(false)
+    const globalZoomLevel = ref(1)
     
     // Initialize with test data only if no data exists
     onMounted(() => {
@@ -102,6 +109,48 @@ export default defineComponent({
       if (e.ctrlKey && e.key === 'z') {
         e.preventDefault() // Prevent browser's default undo
         handleUndo()
+      }
+      
+      // Check for Ctrl+Plus (zoom in)
+      if (e.ctrlKey && e.key === '+') {
+        e.preventDefault()
+        globalZoomIn()
+      }
+      
+      // Check for Ctrl+Minus (zoom out)
+      if (e.ctrlKey && e.key === '-') {
+        e.preventDefault()
+        globalZoomOut()
+      }
+      
+      // Check for Ctrl+0 (reset zoom)
+      if (e.ctrlKey && e.key === '0') {
+        e.preventDefault()
+        resetGlobalZoom()
+      }
+    }
+
+    // Global zoom controls
+    const globalZoomIn = () => {
+      globalZoomLevel.value = Math.min(globalZoomLevel.value * 1.2, 5)
+      updateAllPanesZoom()
+    }
+    
+    const globalZoomOut = () => {
+      globalZoomLevel.value = Math.max(globalZoomLevel.value / 1.2, 0.1)
+      updateAllPanesZoom()
+    }
+    
+    const resetGlobalZoom = () => {
+      globalZoomLevel.value = 1
+      updateAllPanesZoom()
+    }
+    
+    const updateAllPanesZoom = () => {
+      // This will be called when the workspace component is ready
+      if (workspaceRef.value) {
+        // We'll need to implement a method in WorkspaceView to update all panes
+        workspaceRef.value.updateAllPanesZoom(globalZoomLevel.value)
       }
     }
 
@@ -246,7 +295,11 @@ export default defineComponent({
       showProductImages,
       showUndoNotification,
       open2DView,
-      open3DView
+      open3DView,
+      globalZoomLevel,
+      globalZoomIn,
+      globalZoomOut,
+      resetGlobalZoom
     }
   }
 })
@@ -290,6 +343,34 @@ export default defineComponent({
 
 .toolbar button:hover {
   background-color: #1976d2;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.zoom-controls button {
+  padding: 4px 8px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  min-width: 30px;
+}
+
+.zoom-level {
+  padding: 4px 8px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  font-size: 12px;
+  text-align: center;
+  flex: 1;
 }
 
 .template-segment {

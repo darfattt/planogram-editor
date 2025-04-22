@@ -5,6 +5,12 @@
       <button @click="addVerticalSplit" title="Split Vertically">⇅</button>
       <button @click="closeActivePane" title="Close Active Pane" :disabled="panes.length <= 1">×</button>
       <button @click="syncPanes" title="Sync All Panes" :class="{ active: syncEnabled }">⟲</button>
+      <div class="zoom-controls">
+        <button @click="zoomOut" title="Zoom Out">-</button>
+        <span class="zoom-level">{{ Math.round(zoomLevel * 100) }}%</span>
+        <button @click="zoomIn" title="Zoom In">+</button>
+        <button @click="resetZoom" title="Reset Zoom">100%</button>
+      </div>
     </div>
     <splitpanes class="default-theme" :horizontal="isHorizontal" @resized="handlePaneResize" @pane-click="handlePaneClick">
       <pane v-for="(pane, index) in panes" :key="index" :min-size="20">
@@ -43,6 +49,8 @@
               v-if="pane.getActiveTab().type === '2d'"
               ref="editorCanvasRef"
               class="editor-canvas"
+              :zoom="zoomLevel"
+              @zoom-change="handleZoomChange"
               @update="handleCanvasUpdate(index)"
             />
             <ThreeDViewer
@@ -98,6 +106,7 @@ export default defineComponent({
     const isHorizontal = ref(false)
     const draggedTab = ref<DragData | null>(null)
     const isDragging = ref(false)
+    const zoomLevel = ref(1)
     
     // Create initial pane data
     const initialPane: PaneData = {
@@ -108,6 +117,28 @@ export default defineComponent({
     
     // Pane management
     const panes = ref<PaneData[]>([initialPane]);
+
+    // Zoom controls
+    const zoomIn = () => {
+      zoomLevel.value = Math.min(zoomLevel.value * 1.2, 5)
+    }
+    
+    const zoomOut = () => {
+      zoomLevel.value = Math.max(zoomLevel.value / 1.2, 0.1)
+    }
+    
+    const resetZoom = () => {
+      zoomLevel.value = 1
+    }
+    
+    const handleZoomChange = (newZoom: number) => {
+      zoomLevel.value = newZoom
+    }
+
+    // Method to update zoom level for all panes
+    const updateAllPanesZoom = (newZoom: number) => {
+      zoomLevel.value = newZoom
+    }
 
     const createNewPane = (): PaneData => ({
       tabs: [{ title: '2D View', type: '2d' }],
@@ -356,6 +387,7 @@ export default defineComponent({
       isHorizontal,
       isDragging,
       draggedTab,
+      zoomLevel,
       addHorizontalSplit,
       addVerticalSplit,
       closeActivePane,
@@ -370,7 +402,12 @@ export default defineComponent({
       handleTabDragEnter,
       handleTabDrop,
       handlePaneResize,
-      handlePaneClick
+      handlePaneClick,
+      zoomIn,
+      zoomOut,
+      resetZoom,
+      handleZoomChange,
+      updateAllPanesZoom
     }
   }
 })
@@ -566,5 +603,34 @@ export default defineComponent({
   left: 0;
   width: 100%;
   height: 4px;
+}
+
+.zoom-controls {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #ddd;
+}
+
+.zoom-controls button {
+  padding: 2px 6px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.zoom-controls button:hover {
+  background-color: #e0e0e0;
+}
+
+.zoom-level {
+  padding: 2px 6px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-size: 12px;
 }
 </style> 
