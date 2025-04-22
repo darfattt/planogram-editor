@@ -9,7 +9,7 @@
     v-bind="$attrs"
   >
     <v-layer>
-      <!-- Segments -->
+      <!-- Segments (bottom layer) -->
       <SegmentComponent
         v-for="segment in segments"
         :key="segment.id"
@@ -19,12 +19,7 @@
         @update-position="updateSegmentPosition"
       />
 
-      <!-- Standalone Products -->
-      <ProductComponent
-        v-for="product in standaloneProducts"
-        :key="product.id"
-        :product="product"
-      />
+      <!-- Standalone Shelves (middle layer) -->
       <ShelfComponent
         v-for="shelf in standaloneShelves"
         :key="shelf.id"
@@ -33,12 +28,19 @@
         @update-position="handleProductPositionUpdate"
       />
 
-      <!-- Render pegboards that are not in segments -->
+      <!-- Standalone Pegboards (middle layer) -->
       <PegboardComponent
         v-for="pegboard in standaloneFixtures.pegboards"
         :key="pegboard.id"
         :pegboard="pegboard"
         @update-position="handleFixturePositionUpdate"
+      />
+
+      <!-- Products (top layer) -->
+      <ProductComponent
+        v-for="product in standaloneProducts"
+        :key="product.id"
+        :product="product"
       />
     </v-layer>
   </v-stage>
