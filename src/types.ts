@@ -54,18 +54,23 @@ export interface Product {
   depth: number
   segmentId?: string | null
   shelfId?: string | null
+  fixtureId?: string | null
   relativeX?: number
   relativeY?: number
-  category: string
-  type: string
+  type?: string
   color?: string
-  image?: string | null
-  groupId?: string | null
-  // Add other product properties as needed
-  identification?: ProductIdentification | null,
-  physical?: ProductPhysical | null
+  category?: string
+  image?: string
+  groupId?: string
+  physical?: {
+    weight?: number
+    dimensions?: {
+      width: number
+      height: number
+      depth: number
+    }
+  }
 }
-
 
 export interface ProductIdentification {
   manufacturer: string;
@@ -147,6 +152,22 @@ export interface ProductPhysical {
       depth: number;
     };
   };
+}
+
+export interface Pegboard {
+  id: string
+  x: number
+  y: number
+  width: number
+  height: number
+  depth: number
+  color?: string
+  segmentId?: string | null
+  relativeX?: number
+  relativeY?: number
+  strictPlacement: boolean
+  category: string
+  subCategory: string
 }
 
 export type PlanogramItem = Segment | Shelf | Product

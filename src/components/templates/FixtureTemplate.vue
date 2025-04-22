@@ -8,6 +8,10 @@
       <button class="add-button" @click.stop.prevent="addShelfToCanvas"></button>
       <span>Add Shelf</span>
     </div>
+    <div class="template-item" @click="addPegboardToCanvas">
+      <button class="add-button" @click.stop.prevent="addPegboardToCanvas"></button>
+      <span>Add Pegboard</span>
+    </div>
   </div>
 </template>
 
@@ -40,9 +44,22 @@ export default defineComponent({
       })
     }
 
+    const addPegboardToCanvas = () => {
+      planogramStore.addPegboard({
+        x: 0,
+        y: 0,
+        width: 150,
+        height: 200,
+        depth: 20,
+        color: '#e0e0e0',
+        strictPlacement: false
+      })
+    }
+
     return {
       addSegmentToCanvas,
-      addShelfToCanvas
+      addShelfToCanvas,
+      addPegboardToCanvas
     }
   }
 })

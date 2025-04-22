@@ -198,31 +198,35 @@ export default defineComponent({
         // Log the position update for debugging
         console.log('Position update:', positionUpdate)
         
-        // // Use store method to update shelf position to ensure history tracking
-        planogramStore.updateShelfPosition({
-          id: props.shelf.id,
-          x: positionUpdate.x,
-          y: positionUpdate.y,
-          products: props.products.map(p => ({
-            id: p.id,
-            relativeX: p.relativeX || 0,
-            relativeY: p.relativeY || 0
-          }))
-        })
+        // Calculate relative positions for the shelf within the segment
+        const relativeX = positionUpdate.x - foundSegment.x()
+        const relativeY = positionUpdate.y - foundSegment.y()
         
-        // // Update shelf properties for finalizing position
-        planogramStore.finalizeShelfPosition({
-          id: props.shelf.id,
-          x: positionUpdate.x,
-          y: positionUpdate.y,
-          products: props.products
-        })
+        // Update shelf position with proper relative coordinates
+        // planogramStore.updateShelfPosition({
+        //   id: props.shelf.id,
+        //   x: positionUpdate.x,
+        //   y: positionUpdate.y,
+        //   products: props.products.map(p => ({
+        //     id: p.id,
+        //     relativeX: p.relativeX || 0,
+        //     relativeY: p.relativeY || 0
+        //   }))
+        // })
         
-        // Manually set the segment ID and relative position on the node
+        // // Finalize the position with complete product data
+        // planogramStore.finalizeShelfPosition({
+        //   id: props.shelf.id,
+        //   x: positionUpdate.x,
+        //   y: positionUpdate.y,
+        //   products: props.products
+        // })
+        
+        // Update the node's position and segment ID
         node.setAttr(ATTR_SEGMENT_ID, foundSegment.id())
         node.position({
-          x: positionUpdate.relativeX,
-          y: positionUpdate.relativeY
+          x: relativeX,
+          y: relativeY
         })
       } 
       // If the shelf is not in any segment and wasn't in a segment before

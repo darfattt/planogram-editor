@@ -5,6 +5,7 @@ export const CATEGORY_FIXTURES = 'fixtures'
 // Sub-category constants
 export const SUB_CATEGORY_SHELF = 'shelf'
 export const SUB_CATEGORY_SEGMENT = 'segment'
+export const SUB_CATEGORY_PEGBOARD = 'pegboard'
 
 // Node type constants
 export const NODE_TYPE_GROUP = 'Group'
