@@ -7,7 +7,7 @@
       <button @click="syncPanes" title="Sync All Panes" :class="{ active: syncEnabled }">⟲</button>
       <div class="zoom-controls">
         <button @click="zoomOut" title="Zoom Out">-</button>
-        <span class="zoom-level">{{ Math.round(zoomLevel * 100) }}%</span>
+        <span class="zoom-level">{{ Math.round(getActivePaneZoom() * 100) }}%</span>
         <button @click="zoomIn" title="Zoom In">+</button>
         <button @click="resetZoom" title="Reset Zoom">100%</button>
       </div>
@@ -49,8 +49,8 @@
               v-if="pane.getActiveTab().type === '2d'"
               ref="editorCanvasRef"
               class="editor-canvas"
-              :zoom="zoomLevel"
-              @zoom-change="handleZoomChange"
+              :zoom="getPaneZoom(index)"
+              @zoom-change="handleZoomChange(index, $event)"
               @update="handleCanvasUpdate(index)"
             />
             <ThreeDViewer
@@ -83,6 +83,7 @@ interface PaneData {
   tabs: Tab[];
   activeTabIndex: number;
   getActiveTab: () => Tab;
+  zoomLevel: number;
 }
 
 interface DragData {
@@ -106,13 +107,13 @@ export default defineComponent({
     const isHorizontal = ref(false)
     const draggedTab = ref<DragData | null>(null)
     const isDragging = ref(false)
-    const zoomLevel = ref(1)
     
     // Create initial pane data
     const initialPane: PaneData = {
       tabs: [{ title: '2D View', type: '2d' }],
       activeTabIndex: 0,
-      getActiveTab: function() { return this.tabs[this.activeTabIndex] }
+      getActiveTab: function() { return this.tabs[this.activeTabIndex] },
+      zoomLevel: 1
     };
     
     // Pane management
@@ -120,30 +121,60 @@ export default defineComponent({
 
     // Zoom controls
     const zoomIn = () => {
-      zoomLevel.value = Math.min(zoomLevel.value * 1.2, 5)
+      const currentZoom = getActivePaneZoom();
+      const newZoom = Math.min(currentZoom * 1.2, 5);
+      updatePaneZoom(activePaneIndex.value, newZoom);
     }
     
     const zoomOut = () => {
-      zoomLevel.value = Math.max(zoomLevel.value / 1.2, 0.1)
+      const currentZoom = getActivePaneZoom();
+      const newZoom = Math.max(currentZoom / 1.2, 0.1);
+      updatePaneZoom(activePaneIndex.value, newZoom);
     }
     
     const resetZoom = () => {
-      zoomLevel.value = 1
+      updatePaneZoom(activePaneIndex.value, 1);
     }
     
-    const handleZoomChange = (newZoom: number) => {
-      zoomLevel.value = newZoom
+    const handleZoomChange = (paneIndex: number, newZoom: number) => {
+      updatePaneZoom(paneIndex, newZoom);
+    }
+
+    const getPaneZoom = (paneIndex: number): number => {
+      return panes.value[paneIndex]?.zoomLevel || 1;
+    }
+
+    const getActivePaneZoom = (): number => {
+      return getPaneZoom(activePaneIndex.value);
+    }
+
+    const updatePaneZoom = (paneIndex: number, newZoom: number) => {
+      if (paneIndex >= 0 && paneIndex < panes.value.length) {
+        panes.value[paneIndex].zoomLevel = newZoom;
+        
+        // If sync is enabled, update all panes
+        if (syncEnabled.value) {
+          panes.value.forEach((pane, index) => {
+            if (index !== paneIndex) {
+              pane.zoomLevel = newZoom;
+            }
+          });
+        }
+      }
     }
 
     // Method to update zoom level for all panes
     const updateAllPanesZoom = (newZoom: number) => {
-      zoomLevel.value = newZoom
+      panes.value.forEach((pane, index) => {
+        updatePaneZoom(index, newZoom);
+      });
     }
 
     const createNewPane = (): PaneData => ({
       tabs: [{ title: '2D View', type: '2d' }],
       activeTabIndex: 0,
-      getActiveTab: function() { return this.tabs[this.activeTabIndex] }
+      getActiveTab: function() { return this.tabs[this.activeTabIndex] },
+      zoomLevel: 1
     });
 
     const addHorizontalSplit = (): void => {
@@ -172,6 +203,16 @@ export default defineComponent({
     
     const syncPanes = (): void => {
       syncEnabled.value = !syncEnabled.value;
+      
+      // If enabling sync, set all panes to the active pane's zoom level
+      if (syncEnabled.value) {
+        const activeZoom = getActivePaneZoom();
+        panes.value.forEach((pane, index) => {
+          if (index !== activePaneIndex.value) {
+            pane.zoomLevel = activeZoom;
+          }
+        });
+      }
     };
     
     const open2DView = (paneIndex: number): void => {
@@ -387,7 +428,6 @@ export default defineComponent({
       isHorizontal,
       isDragging,
       draggedTab,
-      zoomLevel,
       addHorizontalSplit,
       addVerticalSplit,
       closeActivePane,
@@ -407,6 +447,8 @@ export default defineComponent({
       zoomOut,
       resetZoom,
       handleZoomChange,
+      getPaneZoom,
+      getActivePaneZoom,
       updateAllPanesZoom
     }
   }
