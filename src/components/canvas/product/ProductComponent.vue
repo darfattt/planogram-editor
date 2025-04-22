@@ -21,14 +21,14 @@
     @click="handleClick"
   >
     <v-group>
-      <v-rect :config="productConfig" v-if="!product.image || !showProductImages" />
-      <v-image 
-        v-else
-        :config="{
-          ...productConfig,
-          image: imageObj,
-        }"
-      />
+    <v-rect :config="productConfig" v-if="!product.image || !showProductImages" />
+    <v-image 
+      v-else
+      :config="{
+        ...productConfig,
+        image: imageObj,
+      }"
+    />
     </v-group>
   </v-group>
 </template>
@@ -345,6 +345,7 @@ export default defineComponent({
             )
             
             if (nearestShelfBelow) {
+              console.log("nearestShelfBelow", nearestShelfBelow);
               // Use this shelf as our target
               const positionData = calculatePositionData(
                 node,
@@ -416,7 +417,7 @@ export default defineComponent({
           }
         }
       }
-
+      console.log("targetShelf", targetShelf);
       const positionData = calculatePositionData(
         node,
         targetShelf,
@@ -602,7 +603,7 @@ export default defineComponent({
           // Get all product IDs in the group
           const groupProductIds = groupProducts.map(p => p.getAttr(ATTR_ID));
           
-          if (!metaPressed) {
+      if (!metaPressed) {
             // If no modifier key, select only the group
             selectionStore.clearSelection();
             groupProductIds.forEach(id => selectionStore.toggleSelection(id));

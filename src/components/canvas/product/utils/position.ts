@@ -17,6 +17,7 @@ import {
  * Shifts all products to the left to fill any gaps
  */
 export function reorganizeProductsOnShelf(shelf: Group, removedProductId?: string): void {
+  console.log("reorganizeProductsOnShelf", shelf);
   const shelfData = shelf.getAttr(ATTR_SHELF_DATA)
   
   // Only proceed if strict placement is enabled
@@ -28,7 +29,7 @@ export function reorganizeProductsOnShelf(shelf: Group, removedProductId?: strin
   const productsOnShelf = shelf.getChildren(child => 
     child.getAttr(ATTR_CATEGORY)?.toLowerCase() === 'product'
   )
-  
+  console.log("productsOnShelf", productsOnShelf);  
   if (productsOnShelf.length === 0) {
     return // No products to reorganize
   }
@@ -40,7 +41,7 @@ export function reorganizeProductsOnShelf(shelf: Group, removedProductId?: strin
   
   // Start positioning from the left edge
   let currentX = 0
-  
+  console.log("sortedProducts", sortedProducts);
   // Reposition each product
   sortedProducts.forEach(product => {
     // Skip the product being removed (if specified)
@@ -59,16 +60,18 @@ export function reorganizeProductsOnShelf(shelf: Group, removedProductId?: strin
 export function getShelfPositionData(
   shelf: Group,
   absolutePos: { x: number; y: number },
-  productHeight: number
+  productHeight: number,
+  draggedProductId?: string
 ): ShelfPositionData {
   const shelfPos = shelf.getAbsolutePosition()
   const shelfData = shelf.getAttr(ATTR_SHELF_DATA)
   
   // Check if strict placement is enabled
   if (shelfData.strictPlacement) {
-    // Get all products on this shelf
+    // Get all products on this shelf except the one being dragged
     const productsOnShelf = shelf.getChildren(child => 
-      child.getAttr(ATTR_CATEGORY)?.toLowerCase() === 'product'
+      child.getAttr(ATTR_CATEGORY)?.toLowerCase() === 'product' &&
+      child.id() !== draggedProductId
     )
     
     if (productsOnShelf.length === 0) {
@@ -127,6 +130,77 @@ export function getProductPositionData(
   }
 }
 
+/**
+ * Handles product movement within the same shelf
+ * Returns position data for products being moved on the same shelf
+ */
+function getSameShelfPositionData(
+  shelf: Group,
+  draggedProduct: Node,
+  absolutePos: { x: number; y: number },
+  productHeight: number
+): ShelfPositionData {
+  const shelfPos = shelf.getAbsolutePosition()
+  const shelfData = shelf.getAttr(ATTR_SHELF_DATA)
+  
+  if (!shelfData.strictPlacement) {
+    return {
+      relativeX: absolutePos.x - shelfPos.x,
+      relativeY: (- productHeight) - Y_OFFSET_PRODUCT_ON_TOP_OF_SHELF,
+      shelfPos,
+      shelfData
+    }
+  }
+
+  // Get all products on this shelf except the one being dragged
+  const productsOnShelf = shelf.getChildren(child => 
+    child.getAttr(ATTR_CATEGORY)?.toLowerCase() === 'product' &&
+    child.id() !== draggedProduct.id()
+  )
+
+  // Sort products by X position
+  const sortedProducts = [...productsOnShelf].sort((a, b) => 
+    a.getAttr(ATTR_X) - b.getAttr(ATTR_X)
+  )
+
+  // Find the insertion position
+  const dragX = absolutePos.x - shelfPos.x
+  let insertIndex = 0
+
+  for (let i = 0; i < sortedProducts.length; i++) {
+    const product = sortedProducts[i]
+    const productX = product.getAttr(ATTR_X)
+    const productWidth = product.getAttr(ATTR_WIDTH)
+
+    if (dragX < productX + productWidth / 2) {
+      break
+    }
+    insertIndex = i + 1
+  }
+
+  // Calculate the new X position
+  let newX = 0
+  if (insertIndex === 0) {
+    // Insert at the beginning
+    newX = 0
+  } else if (insertIndex === sortedProducts.length) {
+    // Insert at the end
+    const lastProduct = sortedProducts[sortedProducts.length - 1]
+    newX = lastProduct.getAttr(ATTR_X) + lastProduct.getAttr(ATTR_WIDTH)
+  } else {
+    // Insert between products
+    const prevProduct = sortedProducts[insertIndex - 1]
+    newX = prevProduct.getAttr(ATTR_X) + prevProduct.getAttr(ATTR_WIDTH)
+  }
+
+  return {
+    relativeX: newX,
+    relativeY: (- productHeight) - Y_OFFSET_PRODUCT_ON_TOP_OF_SHELF,
+    shelfPos,
+    shelfData
+  }
+}
+
 export function calculatePositionData(
   node: Node,
   targetShelf: Group | null,
@@ -142,12 +216,20 @@ export function calculatePositionData(
   const isMovingFromShelf = originalShelfData && originalShelfData.strictPlacement && REORG_PRODUCT_ON_SHELF;
   
   if (targetShelf) {
-    const positionData = getShelfPositionData(targetShelf, absolutePos, productHeight);
+    let positionData: ShelfPositionData;
     const group = node as unknown as Group;
     
-    // If moving from a shelf with strict placement, reorganize the original shelf
-    if (isMovingFromShelf && originalParent !== targetShelf) {
-      reorganizeProductsOnShelf(originalParent as Group, node.id());
+    // Check if moving within the same shelf
+    if (originalParent === targetShelf) {
+      positionData = getSameShelfPositionData(targetShelf, node, absolutePos, productHeight);
+    } else {
+      // Moving to a different shelf
+      positionData = getShelfPositionData(targetShelf, absolutePos, productHeight, node.id());
+      
+      // If moving from a shelf with strict placement, reorganize the original shelf
+      if (isMovingFromShelf) {
+        reorganizeProductsOnShelf(originalParent as Group, node.id());
+      }
     }
     
     group.moveTo(targetShelf);

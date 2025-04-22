@@ -19,6 +19,14 @@
         @update-position="updateSegmentPosition"
       />
 
+      <!-- Standalone Pegboards (middle layer) -->
+      <PegboardComponent
+        v-for="pegboard in standaloneFixtures.pegboards"
+        :key="pegboard.id"
+        :pegboard="pegboard"
+        @update-position="handleFixturePositionUpdate"
+      />
+
       <!-- Standalone Shelves (middle layer) -->
       <ShelfComponent
         v-for="shelf in standaloneShelves"
@@ -26,14 +34,6 @@
         :shelf="shelf"
         :products="getProductsByShelf(shelf.id)"
         @update-position="handleProductPositionUpdate"
-      />
-
-      <!-- Standalone Pegboards (middle layer) -->
-      <PegboardComponent
-        v-for="pegboard in standaloneFixtures.pegboards"
-        :key="pegboard.id"
-        :pegboard="pegboard"
-        @update-position="handleFixturePositionUpdate"
       />
 
       <!-- Products (top layer) -->
