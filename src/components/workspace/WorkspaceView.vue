@@ -5,6 +5,12 @@
       <button @click="addVerticalSplit" title="Split Vertically">⇅</button>
       <button @click="closeActivePane" title="Close Active Pane" :disabled="panes.length <= 1">×</button>
       <button @click="syncPanes" title="Sync All Panes" :class="{ active: syncEnabled }">⟲</button>
+      <div class="zoom-controls">
+        <button @click="zoomOut" title="Zoom Out">-</button>
+        <span class="zoom-level">{{ Math.round(getActivePaneZoom() * 100) }}%</span>
+        <button @click="zoomIn" title="Zoom In">+</button>
+        <button @click="resetZoom" title="Reset Zoom">100%</button>
+      </div>
     </div>
     <splitpanes class="default-theme" :horizontal="isHorizontal" @resized="handlePaneResize" @pane-click="handlePaneClick">
       <pane v-for="(pane, index) in panes" :key="index" :min-size="20">
@@ -43,6 +49,8 @@
               v-if="pane.getActiveTab().type === '2d'"
               ref="editorCanvasRef"
               class="editor-canvas"
+              :zoom="getPaneZoom(index)"
+              @zoom-change="handleZoomChange(index, $event)"
               @update="handleCanvasUpdate(index)"
             />
             <ThreeDViewer
@@ -75,6 +83,7 @@ interface PaneData {
   tabs: Tab[];
   activeTabIndex: number;
   getActiveTab: () => Tab;
+  zoomLevel: number;
 }
 
 interface DragData {
@@ -103,16 +112,69 @@ export default defineComponent({
     const initialPane: PaneData = {
       tabs: [{ title: '2D View', type: '2d' }],
       activeTabIndex: 0,
-      getActiveTab: function() { return this.tabs[this.activeTabIndex] }
+      getActiveTab: function() { return this.tabs[this.activeTabIndex] },
+      zoomLevel: 1
     };
     
     // Pane management
     const panes = ref<PaneData[]>([initialPane]);
 
+    // Zoom controls
+    const zoomIn = () => {
+      const currentZoom = getActivePaneZoom();
+      const newZoom = Math.min(currentZoom * 1.2, 5);
+      updatePaneZoom(activePaneIndex.value, newZoom);
+    }
+    
+    const zoomOut = () => {
+      const currentZoom = getActivePaneZoom();
+      const newZoom = Math.max(currentZoom / 1.2, 0.1);
+      updatePaneZoom(activePaneIndex.value, newZoom);
+    }
+    
+    const resetZoom = () => {
+      updatePaneZoom(activePaneIndex.value, 1);
+    }
+    
+    const handleZoomChange = (paneIndex: number, newZoom: number) => {
+      updatePaneZoom(paneIndex, newZoom);
+    }
+
+    const getPaneZoom = (paneIndex: number): number => {
+      return panes.value[paneIndex]?.zoomLevel || 1;
+    }
+
+    const getActivePaneZoom = (): number => {
+      return getPaneZoom(activePaneIndex.value);
+    }
+
+    const updatePaneZoom = (paneIndex: number, newZoom: number) => {
+      if (paneIndex >= 0 && paneIndex < panes.value.length) {
+        panes.value[paneIndex].zoomLevel = newZoom;
+        
+        // If sync is enabled, update all panes
+        if (syncEnabled.value) {
+          panes.value.forEach((pane, index) => {
+            if (index !== paneIndex) {
+              pane.zoomLevel = newZoom;
+            }
+          });
+        }
+      }
+    }
+
+    // Method to update zoom level for all panes
+    const updateAllPanesZoom = (newZoom: number) => {
+      panes.value.forEach((pane, index) => {
+        updatePaneZoom(index, newZoom);
+      });
+    }
+
     const createNewPane = (): PaneData => ({
       tabs: [{ title: '2D View', type: '2d' }],
       activeTabIndex: 0,
-      getActiveTab: function() { return this.tabs[this.activeTabIndex] }
+      getActiveTab: function() { return this.tabs[this.activeTabIndex] },
+      zoomLevel: 1
     });
 
     const addHorizontalSplit = (): void => {
@@ -141,6 +203,16 @@ export default defineComponent({
     
     const syncPanes = (): void => {
       syncEnabled.value = !syncEnabled.value;
+      
+      // If enabling sync, set all panes to the active pane's zoom level
+      if (syncEnabled.value) {
+        const activeZoom = getActivePaneZoom();
+        panes.value.forEach((pane, index) => {
+          if (index !== activePaneIndex.value) {
+            pane.zoomLevel = activeZoom;
+          }
+        });
+      }
     };
     
     const open2DView = (paneIndex: number): void => {
@@ -370,7 +442,14 @@ export default defineComponent({
       handleTabDragEnter,
       handleTabDrop,
       handlePaneResize,
-      handlePaneClick
+      handlePaneClick,
+      zoomIn,
+      zoomOut,
+      resetZoom,
+      handleZoomChange,
+      getPaneZoom,
+      getActivePaneZoom,
+      updateAllPanesZoom
     }
   }
 })
@@ -566,5 +645,34 @@ export default defineComponent({
   left: 0;
   width: 100%;
   height: 4px;
+}
+
+.zoom-controls {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #ddd;
+}
+
+.zoom-controls button {
+  padding: 2px 6px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.zoom-controls button:hover {
+  background-color: #e0e0e0;
+}
+
+.zoom-level {
+  padding: 2px 6px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-size: 12px;
 }
 </style> 

@@ -6,6 +6,7 @@
     @drop="handleDrop"
     @pointermove="handleMouseMove"
     @click="handleStageClick"
+    @wheel="handleWheel"
     v-bind="$attrs"
   >
     <v-layer>
@@ -47,7 +48,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, ref, onMounted, watch } from 'vue'
 import { usePlanogramStore } from '../../composables/usePlanogramStore'
 import useDragAndDrop from '../../composables/useDragAndDrop'
 import ShelfComponent from './shelf/ShelfComponent.vue'
@@ -69,6 +70,12 @@ export default defineComponent({
     SegmentComponent,
     PegboardComponent,
   },
+  props: {
+    zoom: {
+      type: Number,
+      default: 1
+    }
+  },
   setup(props, { emit }) {
     const store = usePlanogramStore()
     const { segments, shelves, products, standaloneProducts, standaloneShelves, standaloneFixtures } = storeToRefs(store)
@@ -78,14 +85,24 @@ export default defineComponent({
     const debugStore = useDebugStore()
     const selectionStore = useSelectionStore()
 
-    const stageConfig = {
+    const stageConfig = ref({
       width: window.innerWidth - 50,
       height: window.innerHeight - 50,
       scale: { x: 1, y: 1 },
       style: {
         border: '2px solid #e0e0e0'
       }
-    }
+    })
+
+    // Watch for zoom changes
+    watch(() => props.zoom, (newZoom) => {
+      if (stageRef.value) {
+        const stage = stageRef.value.getStage()
+        if (stage) {
+          stage.scale({ x: newZoom, y: newZoom })
+        }
+      }
+    }, { immediate: true })
 
     if (segments.value.length === 0) {
       // Initialize test data on component mount
@@ -198,6 +215,34 @@ export default defineComponent({
       })
     }
 
+    // Handle wheel event for zooming
+    const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
+      e.evt.preventDefault()
+      
+      const stage = stageRef.value?.getStage()
+      if (!stage) return
+      
+      const oldScale = stage.scaleX()
+      const pointer = stage.getPointerPosition()
+      if (!pointer) return
+      
+      const mousePointTo = {
+        x: (pointer.x - stage.x()) / oldScale,
+        y: (pointer.y - stage.y()) / oldScale,
+      }
+      
+      // Calculate new scale
+      const direction = e.evt.deltaY > 0 ? -1 : 1
+      const scaleBy = 1.1
+      const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy
+      
+      // Limit zoom level
+      const limitedScale = Math.min(Math.max(newScale, 0.1), 5)
+      
+      // Emit zoom change event
+      emit('zoom-change', limitedScale)
+    }
+
     return {
       stageRef,
       stageConfig,
@@ -215,7 +260,8 @@ export default defineComponent({
       handleMouseMove,
       handleStageClick,
       handleProductPositionUpdate,
-      handleFixturePositionUpdate
+      handleFixturePositionUpdate,
+      handleWheel
     }
   }
 })
