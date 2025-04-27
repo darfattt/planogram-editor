@@ -199,9 +199,10 @@ export default defineComponent({
     const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
       debugStore.clearDragNodePosition()
       const node = e.target
-      const absolutePos = node.getAbsolutePosition()
       const stage = node.getStage()
       if (!stage) return
+
+      const absolutePos = node.getAbsolutePosition()
 
       const { shelves, allProducts } = findElements(stage)
       
@@ -227,25 +228,26 @@ export default defineComponent({
         Y_TOLERANCE
       )
 
-      // Find target pegboard
+      // Find target pegboard using Konva's getClientRect()
       const targetPegboard = pegboards.find(pegboard => {
-        const pegboardPos = pegboard.absolutePosition()
-        const pegboardWidth = pegboard.width()
-        const pegboardHeight = pegboard.height()
-
+        const pegboardRect = pegboard.getClientRect()
         return (
-          absolutePos.x >= pegboardPos.x &&
-          absolutePos.x <= pegboardPos.x + pegboardWidth &&
-          absolutePos.y >= pegboardPos.y &&
-          absolutePos.y <= pegboardPos.y + pegboardHeight
+          absolutePos.x >= pegboardRect.x &&
+          absolutePos.x <= pegboardRect.x + pegboardRect.width &&
+          absolutePos.y >= pegboardRect.y &&
+          absolutePos.y <= pegboardRect.y + pegboardRect.height
         )
       })
 
       // If we found a pegboard, update product position relative to it
       if (targetPegboard) {
-        const pegboardPos = targetPegboard.absolutePosition()
-        const relativeX = absolutePos.x - pegboardPos.x
-        const relativeY = absolutePos.y - pegboardPos.y
+        const pegboardRect = targetPegboard.getClientRect()
+        // We already checked stage existence at the start of handleDragEnd
+        const scale = stage.scaleX()
+
+        // Calculate relative position by adjusting for scale
+        const relativeX = (absolutePos.x - pegboardRect.x) / scale
+        const relativeY = (absolutePos.y - pegboardRect.y) / scale
 
         // Update product position
         const { updateProductPosition } = usePlanogramStore()
@@ -262,23 +264,21 @@ export default defineComponent({
 
         // If this product is part of a group, update all products in the group
         if (props.product.groupId) {
-          // Find all products with the same groupId
+          
           const groupProducts = stage.find((n: Node) => {
             if (n.getAttr(ATTR_CATEGORY)?.toLowerCase() !== CATEGORY_PRODUCT || 
                 n.getAttr(ATTR_ID) === props.product.id) {
               return false;
             }
             
-            // Check if product has the same groupId
             const productData = store.products.find(p => p.id === n.getAttr(ATTR_ID));
             return productData && productData.groupId === props.product.groupId;
           });
           
-          // Calculate the movement delta
+          // Calculate the movement delta based on absolute positions
           const dx = absolutePos.x - props.product.x;
           const dy = absolutePos.y - props.product.y;
           
-          // Update all products in the group
           groupProducts.forEach(groupProduct => {
             const productId = groupProduct.getAttr(ATTR_ID);
             const productData = store.products.find(p => p.id === productId);
@@ -316,37 +316,37 @@ export default defineComponent({
 
       // If we're in a segment but not directly on a shelf or pegboard, try to find the nearest shelf below
       if (!targetShelf && !targetProduct && !targetPegboard) {
-        console.log('find nearest shelf...');
         const segments = stage.find((n: Node) => 
           n.getAttr(ATTR_CATEGORY)?.toLowerCase() === CATEGORY_FIXTURES && 
           n.getAttr(ATTR_SUB_CATEGORY)?.toLowerCase() === SUB_CATEGORY_SEGMENT
         )
         
-        // Check if we're inside any segment
+        // Check if we're inside any segment using getClientRect()
         for (const segment of segments) {
-          const segmentBox = segment.getClientRect()
+          const segmentRect = segment.getClientRect()
+          
           if (
-            absolutePos.x >= segmentBox.x && 
-            absolutePos.x <= segmentBox.x + segmentBox.width &&
-            absolutePos.y >= segmentBox.y && 
-            absolutePos.y <= segmentBox.y + segmentBox.height
+            absolutePos.x >= segmentRect.x && 
+            absolutePos.x <= segmentRect.x + segmentRect.width &&
+            absolutePos.y >= segmentRect.y && 
+            absolutePos.y <= segmentRect.y + segmentRect.height
           ) {
             // We're inside a segment, find the nearest shelf below
             const segmentShelves = shelves.filter(shelf => 
               shelf.getAttr(ATTR_SEGMENT_ID) === segment.id()
             )
             
-            // Sort shelves by y position (top to bottom)
-            const sortedShelves = [...segmentShelves].sort((a, b) => a.y() - b.y())
+            // Sort shelves by y position using getClientRect()
+            const sortedShelves = [...segmentShelves].sort((a, b) => 
+              a.getClientRect().y - b.getClientRect().y
+            )
             
             // Find the first shelf that's below our current position
             const nearestShelfBelow = sortedShelves.find(shelf => 
-              shelf.y() > absolutePos.y
+              shelf.getClientRect().y > absolutePos.y
             )
             
             if (nearestShelfBelow) {
-              console.log("nearestShelfBelow", nearestShelfBelow);
-              // Use this shelf as our target
               const positionData = calculatePositionData(
                 node,
                 nearestShelfBelow,
@@ -357,37 +357,28 @@ export default defineComponent({
                 originalPosition.value
               )
               
-              // Update product position
               const { updateProductPosition } = usePlanogramStore()
               updateProductPosition({
                 id: props.product.id,
-                x: positionData.x,
-                y: positionData.y,
-                relativeX: positionData.relativeX,
-                relativeY: positionData.relativeY,
+                ...positionData,
                 shelfId: positionData.shelfId,
                 segmentId: positionData.segmentId,
               })
               
-              // If this product is part of a group, update all products in the group
               if (props.product.groupId) {
-                // Find all products with the same groupId
                 const groupProducts = stage.find((n: Node) => {
                   if (n.getAttr(ATTR_CATEGORY)?.toLowerCase() !== CATEGORY_PRODUCT || 
                       n.getAttr(ATTR_ID) === props.product.id) {
                     return false;
                   }
                   
-                  // Check if product has the same groupId
                   const productData = store.products.find(p => p.id === n.getAttr(ATTR_ID));
                   return productData && productData.groupId === props.product.groupId;
                 });
                 
-                // Calculate the movement delta
                 const dx = positionData.x - props.product.x;
                 const dy = positionData.y - props.product.y;
                 
-                // Update all products in the group
                 groupProducts.forEach(groupProduct => {
                   const productId = groupProduct.getAttr(ATTR_ID);
                   const productData = store.products.find(p => p.id === productId);
@@ -417,7 +408,7 @@ export default defineComponent({
           }
         }
       }
-      console.log("targetShelf", targetShelf);
+
       const positionData = calculatePositionData(
         node,
         targetShelf,
@@ -443,40 +434,29 @@ export default defineComponent({
       
       // Check for nearby products with the same code to group them
       if (!targetShelf && !targetProduct) {
-        // Find all products with the same code that are nearby
         const nearbyProducts = stage.find((n: Node) => {
           if (n.getAttr(ATTR_CATEGORY)?.toLowerCase() !== CATEGORY_PRODUCT || 
               n.getAttr(ATTR_ID) === props.product.id) {
             return false;
           }
           
-          // Check if product has the same code
           if (n.getAttr('code') !== props.product.code) {
             return false;
           }
           
-          // Check if product is nearby (within a certain distance)
-          const productPos = n.getAbsolutePosition();
+          const productRect = n.getClientRect()
           const distance = Math.sqrt(
-            Math.pow(productPos.x - absolutePos.x, 2) + 
-            Math.pow(productPos.y - absolutePos.y, 2)
+            Math.pow(productRect.x - absolutePos.x, 2) + 
+            Math.pow(productRect.y - absolutePos.y, 2)
           );
           
-          // Consider products within 50 pixels as nearby
           return distance < 50;
         });
         
         if (nearbyProducts.length > 0) {
-          // Group products with the same code
           const { groupProducts } = usePlanogramStore();
-          
-          // Create an array of product IDs to group
           const productIds = [props.product.id, ...nearbyProducts.map(p => p.getAttr(ATTR_ID))];
-          
-          // Group the products
           groupProducts(productIds);
-          
-          // Select all products in the group
           selectionStore.clearSelection();
           productIds.forEach(id => selectionStore.toggleSelection(id));
         }
@@ -484,46 +464,52 @@ export default defineComponent({
       
       if(positionData.foundProduct || positionData.foundShelf) {
         const { updateProductPosition } = usePlanogramStore()
+        
+        // Get the scale for relative position calculation
+        const scale = stage.scaleX()
+        
+        // Adjust relative positions for scale
+        const adjustedPositionData = {
+          ...positionData,
+          relativeX: positionData.relativeX / scale,
+          relativeY: positionData.relativeY / scale
+        }
+        
         updateProductPosition({
           id: props.product.id,
-          x: positionData.x,
-          y: positionData.y,
-          relativeX: positionData.relativeX,
-          relativeY: positionData.relativeY,
+          ...adjustedPositionData,
           shelfId: positionData.shelfId,
           segmentId: positionData.segmentId,
         })
         
-        // If this product is part of a group, update all products in the group
         if (props.product.groupId) {
-          // Find all products with the same groupId
           const groupProducts = stage.find((n: Node) => {
             if (n.getAttr(ATTR_CATEGORY)?.toLowerCase() !== CATEGORY_PRODUCT || 
                 n.getAttr(ATTR_ID) === props.product.id) {
               return false;
             }
             
-            // Check if product has the same groupId
             const productData = store.products.find(p => p.id === n.getAttr(ATTR_ID));
             return productData && productData.groupId === props.product.groupId;
           });
           
-          // Calculate the movement delta
           const dx = positionData.x - props.product.x;
           const dy = positionData.y - props.product.y;
           
-          // Update all products in the group
           groupProducts.forEach(groupProduct => {
             const productId = groupProduct.getAttr(ATTR_ID);
             const productData = store.products.find(p => p.id === productId);
             
             if (productData) {
+              const relativeX = productData.relativeX !== undefined ? productData.relativeX / scale : undefined;
+              const relativeY = productData.relativeY !== undefined ? productData.relativeY / scale : undefined;
+              
               updateProductPosition({
                 id: productId,
                 x: productData.x + dx,
                 y: productData.y + dy,
-                relativeX: productData.relativeX,
-                relativeY: productData.relativeY,
+                relativeX,
+                relativeY,
                 shelfId: positionData.shelfId,
                 segmentId: positionData.segmentId,
               });
@@ -535,7 +521,9 @@ export default defineComponent({
       emit('dragend', {
         id: props.product.id,
         parentProductId: null,
-        ...positionData
+        ...positionData,
+        relativeX: positionData.relativeX / stage.scaleX(),
+        relativeY: positionData.relativeY / stage.scaleX()
       })
     }
 
