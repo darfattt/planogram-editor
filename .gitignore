@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 
 .vercel
+.cursor/rules/clean-code.mdc
+.cursor/rules/vue.mdc
