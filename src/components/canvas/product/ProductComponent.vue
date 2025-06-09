@@ -115,17 +115,34 @@ export default defineComponent({
       selectionStore.selectedIds.value.includes(props.product.id)
     )
 
-    const productConfig = computed(() => ({
-      id: props.product.id, 
-      width: props.product.width,
-      height: props.product.height,
-      fill: props.product.color? props.product.color : DEFAULT_FILL_COLOR,
-      ...(isSelected.value ? SELECTED_STYLES : DEFAULT_STYLES),
-      category: props.category,
-      type: props.type,
-      code: props.product.code,
-      color : props.product.color? props.product.color : DEFAULT_FILL_COLOR,
-    }))
+    const productConfig = computed(() => {
+      const baseConfig = {
+        id: props.product.id,
+        width: props.product.width,
+        height: props.product.height,
+        category: props.category,
+        type: props.type,
+        code: props.product.code,
+      }
+
+      // Enhanced visual properties
+      const visualProps = props.product.visual || {}
+      const primaryColor = visualProps.primaryColor || props.product.color || DEFAULT_FILL_COLOR
+
+      return {
+        ...baseConfig,
+        fill: primaryColor,
+        opacity: visualProps.opacity || 1,
+        cornerRadius: visualProps.borderRadius || 0,
+        ...(isSelected.value ? SELECTED_STYLES : DEFAULT_STYLES),
+        // Add gradient support if secondary color exists
+        ...(visualProps.secondaryColor && {
+          fillLinearGradientStartPoint: { x: 0, y: 0 },
+          fillLinearGradientEndPoint: { x: props.product.width, y: props.product.height },
+          fillLinearGradientColorStops: [0, primaryColor, 1, visualProps.secondaryColor],
+        }),
+      }
+    })
 
     const originalPosition = ref({ x: 0, y: 0 })
     const debugStore = useDebugStore()

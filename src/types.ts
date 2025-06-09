@@ -62,6 +62,32 @@ export interface Product {
   category?: string
   image?: string
   groupId?: string
+
+  // Enhanced product properties
+  name?: string
+  description?: string
+  brand?: string
+  manufacturer?: string
+  sku?: string
+  barcode?: string
+
+  // Retail properties
+  pricing?: {
+    cost?: number
+    retail?: number
+    margin?: number
+    currency?: string
+  }
+
+  // Inventory
+  inventory?: {
+    stock?: number
+    minStock?: number
+    maxStock?: number
+    reorderPoint?: number
+  }
+
+  // Physical properties (enhanced)
   physical?: {
     weight?: number
     dimensions?: {
@@ -69,6 +95,28 @@ export interface Product {
       height: number
       depth: number
     }
+    packaging?: {
+      type: string
+      material?: string
+      recyclable?: boolean
+    }
+  }
+
+  // Visual properties
+  visual?: {
+    primaryColor?: string
+    secondaryColor?: string
+    texture?: string
+    opacity?: number
+    borderRadius?: number
+  }
+
+  // Metadata
+  metadata?: {
+    createdAt?: Date
+    updatedAt?: Date
+    tags?: string[]
+    notes?: string
   }
 }
 
@@ -89,6 +137,44 @@ export interface ProductIdentification {
   locationID: string;
   preferredFixture: string;
   rank: number;
+}
+
+// Enhanced product categories
+export interface ProductCategory {
+  id: string
+  name: string
+  description?: string
+  parentId?: string
+  color?: string
+  icon?: string
+  properties?: Record<string, any>
+}
+
+// Product template for creating new products
+export interface ProductTemplate {
+  id: string
+  name: string
+  category: string
+  defaultProperties: Partial<Product>
+  thumbnail?: string
+  description?: string
+}
+
+// Component definition for UI elements
+export interface ComponentDefinition {
+  id: string
+  type: 'product' | 'fixture' | 'segment' | 'custom'
+  name: string
+  icon?: string
+  defaultProps: Record<string, any>
+  constraints?: {
+    minWidth?: number
+    maxWidth?: number
+    minHeight?: number
+    maxHeight?: number
+    snapToGrid?: boolean
+    allowRotation?: boolean
+  }
 }
 
 export interface ProductPhysical {
