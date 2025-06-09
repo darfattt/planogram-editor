@@ -63,7 +63,16 @@ export function getShelfPositionData(
   productHeight: number,
   draggedProductId?: string
 ): ShelfPositionData {
-  const shelfPos = shelf.getAbsolutePosition()
+  // Get stage and scale for zoom adjustment
+  const stage = shelf.getStage()
+  const scale = stage ? stage.scaleX() : 1
+
+  // Get shelf position and adjust for zoom
+  const rawShelfPos = shelf.getAbsolutePosition()
+  const shelfPos = {
+    x: rawShelfPos.x / scale,
+    y: rawShelfPos.y / scale
+  }
   const shelfData = shelf.getAttr(ATTR_SHELF_DATA)
   
   // Check if strict placement is enabled
@@ -140,7 +149,16 @@ function getSameShelfPositionData(
   absolutePos: { x: number; y: number },
   productHeight: number
 ): ShelfPositionData {
-  const shelfPos = shelf.getAbsolutePosition()
+  // Get stage and scale for zoom adjustment
+  const stage = shelf.getStage()
+  const scale = stage ? stage.scaleX() : 1
+
+  // Get shelf position and adjust for zoom
+  const rawShelfPos = shelf.getAbsolutePosition()
+  const shelfPos = {
+    x: rawShelfPos.x / scale,
+    y: rawShelfPos.y / scale
+  }
   const shelfData = shelf.getAttr(ATTR_SHELF_DATA)
   
   if (!shelfData.strictPlacement) {

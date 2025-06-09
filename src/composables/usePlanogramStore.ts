@@ -134,6 +134,65 @@ export const usePlanogramStore = defineStore('planogram', {
         strictPlacement: false
       }
       this.pegboards.push(testPegboard)
+
+      // // Test Products on shelves
+      // const testProduct1 = {
+      //   id: "product1",
+      //   code: "PROD001",
+      //   x: 0,
+      //   y: 0,
+      //   relativeX: 0,
+      //   relativeY: 0,
+      //   width: 30,
+      //   height: 40,
+      //   depth: 20,
+      //   shelfId: testShelf.id,
+      //   segmentId: testSegment.id,
+      //   type: 'Food',
+      //   color: '#FF5722',
+      //   category: 'product',
+      //   image: '/src/assets/products/pepsi.png'
+      // }
+
+      // const testProduct2 = {
+      //   id: "product2",
+      //   code: "PROD002",
+      //   x: 0,
+      //   y: 0,
+      //   relativeX: 35,
+      //   relativeY: 0,
+      //   width: 30,
+      //   height: 40,
+      //   depth: 20,
+      //   shelfId: testShelf.id,
+      //   segmentId: testSegment.id,
+      //   type: 'Drink',
+      //   color: '#2196F3',
+      //   category: 'product',
+      //   image: '/src/assets/products/cola.png'
+      // }
+
+      // const testProduct3 = {
+      //   id: "product3",
+      //   code: "PROD003",
+      //   x: 0,
+      //   y: 0,
+      //   relativeX: 70,
+      //   relativeY: 0,
+      //   width: 30,
+      //   height: 40,
+      //   depth: 20,
+      //   shelfId: testShelf2.id,
+      //   segmentId: testSegment.id,
+      //   type: 'Food',
+      //   color: '#4CAF50',
+      //   category: 'product',
+      //   image: '/src/assets/products/default.png'
+      // }
+
+      // this.products.push(testProduct1)
+      // this.products.push(testProduct2)
+      // this.products.push(testProduct3)
     },
     updateShelfPosition(payload: {
       id: string

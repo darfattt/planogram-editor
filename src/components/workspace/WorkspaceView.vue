@@ -1,17 +1,44 @@
 <template>
   <div class="workspace">
-    <div class="workspace-toolbar">
-      <button @click="addHorizontalSplit" title="Split Horizontally">⇄</button>
-      <button @click="addVerticalSplit" title="Split Vertically">⇅</button>
-      <button @click="closeActivePane" title="Close Active Pane" :disabled="panes.length <= 1">×</button>
-      <button @click="syncPanes" title="Sync All Panes" :class="{ active: syncEnabled }">⟲</button>
-      <div class="zoom-controls">
-        <button @click="zoomOut" title="Zoom Out">-</button>
-        <span class="zoom-level">{{ Math.round(getActivePaneZoom() * 100) }}%</span>
-        <button @click="zoomIn" title="Zoom In">+</button>
-        <button @click="resetZoom" title="Reset Zoom">100%</button>
+    <!-- Floating Toolbar -->
+    <div class="floating-toolbar">
+      <div class="toolbar-section">
+        <button @click="addHorizontalSplit" title="Split Horizontally" class="toolbar-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+          </svg>
+        </button>
+        <button @click="addVerticalSplit" title="Split Vertically" class="toolbar-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="12" y1="3" x2="12" y2="21"/>
+          </svg>
+        </button>
+        <button @click="closeActivePane" title="Close Active Pane" :disabled="panes.length <= 1" class="toolbar-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+        <button @click="syncPanes" title="Sync All Panes" :class="{ active: syncEnabled }" class="toolbar-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c2.12 0 4.07.74 5.61 1.98"/>
+            <path d="m17 8 4 4-4 4"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <div class="toolbar-section zoom-section">
+        <button @click="zoomOut" title="Zoom Out" class="zoom-btn">−</button>
+        <span class="zoom-display">{{ Math.round(getActivePaneZoom() * 100) }}%</span>
+        <button @click="zoomIn" title="Zoom In" class="zoom-btn">+</button>
+        <button @click="resetZoom" title="Reset Zoom" class="zoom-btn reset">100%</button>
       </div>
     </div>
+
     <splitpanes class="default-theme" :horizontal="isHorizontal" @resized="handlePaneResize" @pane-click="handlePaneClick">
       <pane v-for="(pane, index) in panes" :key="index" :min-size="20">
         <div class="pane-content" :class="{ active: activePaneIndex === index }">
@@ -67,8 +94,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, nextTick, watch } from 'vue'
-import type { ComputedRef } from 'vue'
+import { defineComponent, ref, nextTick } from 'vue'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
 import EditorCanvas from '../canvas/EditorCanvas.vue'
@@ -458,43 +484,138 @@ export default defineComponent({
 <style scoped>
 .workspace {
   flex: 1;
-  background-color: #fff;
+  background-color: #fafafa;
   overflow: hidden;
   position: relative;
   display: flex;
   flex-direction: column;
 }
 
-.workspace-toolbar {
+/* Floating Toolbar - Excalidraw Style */
+.floating-toolbar {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
+  align-items: center;
   gap: 8px;
-  padding: 8px;
-  background-color: #f0f0f0;
-  border-bottom: 1px solid #ddd;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 100;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
 }
 
-.workspace-toolbar button {
-  padding: 4px 8px;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+.floating-toolbar:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: #e5e7eb;
+  margin: 0 4px;
+}
+
+.toolbar-btn {
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
-.workspace-toolbar button:hover {
-  background-color: #e0e0e0;
+.toolbar-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+  transform: translateY(-1px);
 }
 
-.workspace-toolbar button:disabled {
-  opacity: 0.5;
+.toolbar-btn:active {
+  transform: translateY(0);
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
+  transform: none;
 }
 
-.workspace-toolbar button.active {
-  background-color: #2196f3;
-  color: white;
-  border-color: #1976d2;
+.toolbar-btn:disabled:hover {
+  background: transparent;
+  color: #6b7280;
+}
+
+.toolbar-btn.active {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+}
+
+.zoom-section {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 4px;
+  gap: 2px;
+}
+
+.zoom-btn {
+  width: 28px;
+  height: 28px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+.zoom-btn:hover {
+  background: #f1f5f9;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+}
+
+.zoom-btn.reset {
+  width: auto;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.zoom-display {
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  min-width: 48px;
+  text-align: center;
 }
 
 .pane-content {
@@ -503,103 +624,127 @@ export default defineComponent({
   flex-direction: column;
   border: 2px solid transparent;
   transition: border-color 0.2s ease;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .pane-content.active {
-  border-color: #2196f3;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
 }
 
 .pane-header {
   display: flex;
   flex-direction: column;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
 }
 
 .pane-controls {
   display: flex;
-  gap: 4px;
-  padding: 4px 8px;
-  background-color: #f5f5f5;
-  border-top: 1px solid #ddd;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-top: 1px solid #e5e7eb;
 }
 
 .pane-controls button {
-  padding: 2px 6px;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 3px;
+  padding: 6px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.2s ease;
 }
 
 .pane-controls button:hover {
-  background-color: #e0e0e0;
+  background: #f1f5f9;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
 }
 
 .tabs {
   display: flex;
-  background-color: #f0f0f0;
+  background: #f8fafc;
   overflow-x: auto;
-  min-height: 40px;
+  min-height: 44px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .tab {
-  padding: 10px 15px;
-  background-color: #e0e0e0;
-  border-right: 1px solid #ddd;
+  padding: 12px 16px;
+  background: #f1f5f9;
+  border-right: 1px solid #e5e7eb;
   cursor: move;
   display: flex;
   align-items: center;
-  min-width: 100px;
+  min-width: 120px;
   position: relative;
   user-select: none;
   transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
 }
 
 .tab.active {
-  background-color: #fff;
-  border-bottom: 2px solid #2196f3;
+  background: #ffffff;
+  color: #111827;
+  border-bottom: 2px solid #3b82f6;
+  border-right-color: #e5e7eb;
 }
 
 .tab:hover {
-  background-color: #d0d0d0;
+  background: #e5e7eb;
+  color: #374151;
 }
 
 .tab.dragging {
-  opacity: 0.5;
-  background-color: #2196f3;
+  opacity: 0.6;
+  background: #3b82f6;
   color: white;
+  transform: rotate(2deg);
 }
 
 .tab.drop-target {
-  border-left: 2px solid #2196f3;
+  border-left: 3px solid #3b82f6;
 }
 
 .close-tab {
   margin-left: 8px;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background-color: #ccc;
-  color: #333;
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
   cursor: pointer;
   transition: all 0.2s ease;
+  opacity: 0;
+}
+
+.tab:hover .close-tab {
+  opacity: 1;
 }
 
 .close-tab:hover {
-  background-color: #999;
-  color: #fff;
+  background: #ef4444;
+  color: #ffffff;
+  transform: scale(1.1);
 }
 
 .tab-content {
   flex: 1;
   overflow: hidden;
   position: relative;
+  background: #ffffff;
 }
 
 .editor-canvas,
@@ -609,14 +754,15 @@ export default defineComponent({
   transition: opacity 0.3s ease;
 }
 
+/* Modern Splitpanes Styling */
 :deep(.splitpanes__splitter) {
-  background-color: #f0f0f0;
+  background: #e5e7eb;
   position: relative;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
 }
 
 :deep(.splitpanes__splitter:hover) {
-  background-color: #2196f3;
+  background: #3b82f6;
 }
 
 :deep(.splitpanes__splitter:before) {
@@ -624,9 +770,10 @@ export default defineComponent({
   position: absolute;
   left: 0;
   top: 0;
-  transition: opacity 0.4s;
-  background-color: #2196f3;
+  transition: opacity 0.3s ease;
+  background: #3b82f6;
   opacity: 0;
+  border-radius: 2px;
 }
 
 :deep(.splitpanes__splitter:hover:before) {
@@ -634,45 +781,64 @@ export default defineComponent({
 }
 
 :deep(.splitpanes--vertical > .splitpanes__splitter:before) {
-  left: 0;
-  top: 0;
-  width: 4px;
-  height: 100%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 24px;
 }
 
 :deep(.splitpanes--horizontal > .splitpanes__splitter:before) {
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 3px;
 }
 
-.zoom-controls {
-  display: flex;
-  gap: 4px;
-  padding: 4px 8px;
-  background-color: #f5f5f5;
-  border-top: 1px solid #ddd;
+/* Responsive Design for Floating Toolbar */
+@media (max-width: 768px) {
+  .floating-toolbar {
+    position: fixed;
+    top: auto;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    transform: none;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .toolbar-section {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .toolbar-divider {
+    display: none;
+  }
 }
 
-.zoom-controls button {
-  padding: 2px 6px;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 12px;
-}
+@media (max-width: 480px) {
+  .floating-toolbar {
+    padding: 6px 8px;
+    gap: 4px;
+  }
 
-.zoom-controls button:hover {
-  background-color: #e0e0e0;
-}
+  .toolbar-btn {
+    width: 32px;
+    height: 32px;
+  }
 
-.zoom-level {
-  padding: 2px 6px;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 3px;
-  font-size: 12px;
+  .zoom-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+
+  .zoom-display {
+    font-size: 11px;
+    padding: 4px 6px;
+  }
 }
 </style> 

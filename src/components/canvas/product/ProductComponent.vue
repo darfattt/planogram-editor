@@ -137,14 +137,18 @@ export default defineComponent({
 
     const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
       const node = e.target
-      const pos = node.getAbsolutePosition()
-      debugStore.setDragNodePosition(pos)
-      
-      node.x(node.x())
-      node.y(node.y())
-
       const stage = node.getStage()
       if (!stage) return
+
+      // Get the current zoom level
+      const scale = stage.scaleX()
+
+      // Get position accounting for zoom
+      const pos = node.getAbsolutePosition()
+      debugStore.setDragNodePosition(pos)
+
+      node.x(node.x())
+      node.y(node.y())
 
       // Check if this product is part of a group
       if (props.product.groupId) {
@@ -202,7 +206,15 @@ export default defineComponent({
       const stage = node.getStage()
       if (!stage) return
 
-      const absolutePos = node.getAbsolutePosition()
+      // Get the current zoom level
+      const scale = stage.scaleX()
+
+      // Get absolute position and adjust for zoom
+      const rawAbsolutePos = node.getAbsolutePosition()
+      const absolutePos = {
+        x: rawAbsolutePos.x / scale,
+        y: rawAbsolutePos.y / scale
+      }
 
       const { shelves, allProducts } = findElements(stage)
       
@@ -228,26 +240,39 @@ export default defineComponent({
         Y_TOLERANCE
       )
 
-      // Find target pegboard using Konva's getClientRect()
+      // Find target pegboard using Konva's getClientRect() with zoom adjustment
       const targetPegboard = pegboards.find(pegboard => {
         const pegboardRect = pegboard.getClientRect()
+        // Adjust pegboard rect for zoom
+        const adjustedRect = {
+          x: pegboardRect.x / scale,
+          y: pegboardRect.y / scale,
+          width: pegboardRect.width / scale,
+          height: pegboardRect.height / scale
+        }
         return (
-          absolutePos.x >= pegboardRect.x &&
-          absolutePos.x <= pegboardRect.x + pegboardRect.width &&
-          absolutePos.y >= pegboardRect.y &&
-          absolutePos.y <= pegboardRect.y + pegboardRect.height
+          absolutePos.x >= adjustedRect.x &&
+          absolutePos.x <= adjustedRect.x + adjustedRect.width &&
+          absolutePos.y >= adjustedRect.y &&
+          absolutePos.y <= adjustedRect.y + adjustedRect.height
         )
       })
 
       // If we found a pegboard, update product position relative to it
       if (targetPegboard) {
         const pegboardRect = targetPegboard.getClientRect()
-        // We already checked stage existence at the start of handleDragEnd
-        const scale = stage.scaleX()
 
-        // Calculate relative position by adjusting for scale
-        const relativeX = (absolutePos.x - pegboardRect.x) / scale
-        const relativeY = (absolutePos.y - pegboardRect.y) / scale
+        // Adjust pegboard rect for zoom
+        const adjustedRect = {
+          x: pegboardRect.x / scale,
+          y: pegboardRect.y / scale,
+          width: pegboardRect.width / scale,
+          height: pegboardRect.height / scale
+        }
+
+        // Calculate relative position (already zoom-adjusted)
+        const relativeX = absolutePos.x - adjustedRect.x
+        const relativeY = absolutePos.y - adjustedRect.y
 
         // Update product position
         const { updateProductPosition } = usePlanogramStore()
@@ -321,29 +346,37 @@ export default defineComponent({
           n.getAttr(ATTR_SUB_CATEGORY)?.toLowerCase() === SUB_CATEGORY_SEGMENT
         )
         
-        // Check if we're inside any segment using getClientRect()
+        // Check if we're inside any segment using getClientRect() with zoom adjustment
         for (const segment of segments) {
           const segmentRect = segment.getClientRect()
-          
+
+          // Adjust segment rect for zoom
+          const adjustedRect = {
+            x: segmentRect.x / scale,
+            y: segmentRect.y / scale,
+            width: segmentRect.width / scale,
+            height: segmentRect.height / scale
+          }
+
           if (
-            absolutePos.x >= segmentRect.x && 
-            absolutePos.x <= segmentRect.x + segmentRect.width &&
-            absolutePos.y >= segmentRect.y && 
-            absolutePos.y <= segmentRect.y + segmentRect.height
+            absolutePos.x >= adjustedRect.x &&
+            absolutePos.x <= adjustedRect.x + adjustedRect.width &&
+            absolutePos.y >= adjustedRect.y &&
+            absolutePos.y <= adjustedRect.y + adjustedRect.height
           ) {
             // We're inside a segment, find the nearest shelf below
             const segmentShelves = shelves.filter(shelf => 
               shelf.getAttr(ATTR_SEGMENT_ID) === segment.id()
             )
             
-            // Sort shelves by y position using getClientRect()
-            const sortedShelves = [...segmentShelves].sort((a, b) => 
-              a.getClientRect().y - b.getClientRect().y
+            // Sort shelves by y position using getClientRect() with zoom adjustment
+            const sortedShelves = [...segmentShelves].sort((a, b) =>
+              (a.getClientRect().y / scale) - (b.getClientRect().y / scale)
             )
-            
+
             // Find the first shelf that's below our current position
-            const nearestShelfBelow = sortedShelves.find(shelf => 
-              shelf.getClientRect().y > absolutePos.y
+            const nearestShelfBelow = sortedShelves.find(shelf =>
+              (shelf.getClientRect().y / scale) > absolutePos.y
             )
             
             if (nearestShelfBelow) {
@@ -464,20 +497,13 @@ export default defineComponent({
       
       if(positionData.foundProduct || positionData.foundShelf) {
         const { updateProductPosition } = usePlanogramStore()
-        
-        // Get the scale for relative position calculation
-        const scale = stage.scaleX()
-        
-        // Adjust relative positions for scale
-        const adjustedPositionData = {
-          ...positionData,
-          relativeX: positionData.relativeX / scale,
-          relativeY: positionData.relativeY / scale
-        }
+
+        // Position data is already calculated correctly by calculatePositionData
+        // No need to adjust for scale here as it's handled in the position calculation
         
         updateProductPosition({
           id: props.product.id,
-          ...adjustedPositionData,
+          ...positionData,
           shelfId: positionData.shelfId,
           segmentId: positionData.segmentId,
         })
@@ -501,15 +527,12 @@ export default defineComponent({
             const productData = store.products.find(p => p.id === productId);
             
             if (productData) {
-              const relativeX = productData.relativeX !== undefined ? productData.relativeX / scale : undefined;
-              const relativeY = productData.relativeY !== undefined ? productData.relativeY / scale : undefined;
-              
               updateProductPosition({
                 id: productId,
                 x: productData.x + dx,
                 y: productData.y + dy,
-                relativeX,
-                relativeY,
+                relativeX: productData.relativeX,
+                relativeY: productData.relativeY,
                 shelfId: positionData.shelfId,
                 segmentId: positionData.segmentId,
               });
@@ -521,9 +544,7 @@ export default defineComponent({
       emit('dragend', {
         id: props.product.id,
         parentProductId: null,
-        ...positionData,
-        relativeX: positionData.relativeX / stage.scaleX(),
-        relativeY: positionData.relativeY / stage.scaleX()
+        ...positionData
       })
     }
 

@@ -113,12 +113,21 @@ export default defineComponent({
       console.log('handleDragEnd', props.shelf.id)
       debugStore.clearDragNodePosition()
       const node = e.target
-      if(node.getAttr(ATTR_CATEGORY) !== CATEGORY_FIXTURES && 
+      if(node.getAttr(ATTR_CATEGORY) !== CATEGORY_FIXTURES &&
          node.getAttr(ATTR_SUB_CATEGORY) !== SUB_CATEGORY_SHELF) return
-      
-      const pos = node.getAbsolutePosition()
+
       const stage = node.getStage();
       if (!stage) return
+
+      // Get the current zoom scale
+      const scale = stage.scaleX()
+
+      // Get position and adjust for zoom
+      const rawPos = node.getAbsolutePosition()
+      const pos = {
+        x: rawPos.x / scale,
+        y: rawPos.y / scale
+      }
 
       // Store original position before checking for segments
       const originalX = props.shelf.segmentId ? (props.shelf.relativeX ?? 0) : (props.shelf.x ?? 0)
