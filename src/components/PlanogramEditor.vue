@@ -4,37 +4,80 @@
     <div class="undo-notification" v-if="showUndoNotification">
       Action undone
     </div>
-    <div class="templates">
-      <div class="toolbar">
-        <button @click="handleSave">Save</button>
-        <button @click="handleLoad">Load</button>
-        <button @click="handleUndo" title="Undo (Ctrl+Z)">Undo</button>
-        <button @click="showProductImages = !showProductImages">
-          {{ showProductImages ? 'Hide' : 'Show' }} Images
-        </button>
-        <div class="zoom-controls">
-          <button @click="globalZoomOut" title="Zoom Out">-</button>
-          <span class="zoom-level">{{ Math.round(globalZoomLevel * 100) }}%</span>
-          <button @click="globalZoomIn" title="Zoom In">+</button>
-          <button @click="resetGlobalZoom" title="Reset Zoom">100%</button>
+
+    <!-- Collapsible Left Sidebar -->
+    <div class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+      <!-- Collapse Toggle Button -->
+      <button class="collapse-toggle" @click="toggleSidebar" :title="sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path :d="sidebarCollapsed ? 'm9 18 6-6-6-6' : 'm15 18-6-6 6-6'"/>
+        </svg>
+      </button>
+
+      <div class="sidebar-content" v-show="!sidebarCollapsed">
+        <div class="toolbar">
+          <div class="toolbar-group">
+            <button @click="handleSave" class="toolbar-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17,21 17,13 7,13 7,21"/>
+                <polyline points="7,3 7,8 15,8"/>
+              </svg>
+              Save
+            </button>
+            <button @click="handleLoad" class="toolbar-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10,9 9,9 8,9"/>
+              </svg>
+              Load
+            </button>
+            <button @click="handleUndo" title="Undo (Ctrl+Z)" class="toolbar-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 7v6h6"/>
+                <path d="m21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/>
+              </svg>
+              Undo
+            </button>
+          </div>
+
+          <div class="toolbar-group">
+            <button @click="showProductImages = !showProductImages" class="toolbar-btn" :class="{ active: showProductImages }">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="9" cy="9" r="2"/>
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+              </svg>
+              {{ showProductImages ? 'Hide' : 'Show' }} Images
+            </button>
+          </div>
+
+          <div class="zoom-controls">
+            <button @click="globalZoomOut" title="Zoom Out" class="zoom-btn">−</button>
+            <span class="zoom-level">{{ Math.round(globalZoomLevel * 100) }}%</span>
+            <button @click="globalZoomIn" title="Zoom In" class="zoom-btn">+</button>
+            <button @click="resetGlobalZoom" title="Reset Zoom" class="zoom-btn reset">100%</button>
+          </div>
         </div>
-        <!-- <button @click="open2DView">2D View</button>
-        <button @click="open3DView">3D View</button> -->
-      </div>
-      <div class="template-segment">
-        <h3>Fixtures Template</h3>
-        <FixtureTemplate @dragstart="handleDragStart" />
-      </div>
-      <div class="template-segment">
-        <h3>Products Template</h3>
-        <ProductTemplate 
-          @dragstart="handleDragStart"
-          @add-product="handleAddProduct"
-        />
+
+        <div class="template-segment">
+          <h3>Fixtures Template</h3>
+          <FixtureTemplate @dragstart="handleDragStart" />
+        </div>
+        <div class="template-segment">
+          <h3>Products Template</h3>
+          <ProductTemplate
+            @dragstart="handleDragStart"
+            @add-product="handleAddProduct"
+          />
+        </div>
       </div>
     </div>
-    
-    <WorkspaceView 
+
+    <WorkspaceView
       ref="workspaceRef"
       @open-2d-view="open2DView"
       @open-3d-view="open3DView"
@@ -43,12 +86,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { defineComponent, ref, onMounted, onBeforeUnmount } from 'vue'
 import FixtureTemplate from './templates/FixtureTemplate.vue'
 import ProductTemplate from './templates/ProductTemplate.vue'
 import WorkspaceView from './workspace/WorkspaceView.vue'
 import type { DraggedItem, Product, Segment, Shelf } from '../types'
-import { v4 as uuidv4 } from 'uuid'
+
 import Konva from 'konva'
 import { usePlanogramStore } from '../composables/usePlanogramStore'
 import { storeToRefs } from 'pinia'
@@ -71,6 +114,7 @@ export default defineComponent({
     const workspaceRef = ref<InstanceType<typeof WorkspaceView> | null>(null)
     const showUndoNotification = ref(false)
     const globalZoomLevel = ref(1)
+    const sidebarCollapsed = ref(false)
     
     // Initialize with test data only if no data exists
     onMounted(() => {
@@ -152,6 +196,10 @@ export default defineComponent({
         // We'll need to implement a method in WorkspaceView to update all panes
         workspaceRef.value.updateAllPanesZoom(globalZoomLevel.value)
       }
+    }
+
+    const toggleSidebar = () => {
+      sidebarCollapsed.value = !sidebarCollapsed.value
     }
 
     const open2DView = () => {
@@ -299,7 +347,9 @@ export default defineComponent({
       globalZoomLevel,
       globalZoomIn,
       globalZoomOut,
-      resetGlobalZoom
+      resetGlobalZoom,
+      sidebarCollapsed,
+      toggleSidebar
     }
   }
 })
@@ -311,97 +361,250 @@ export default defineComponent({
   height: 100vh;
   width: 100vw;
   position: relative;
+  background-color: #fafafa;
 }
 
-.templates {
-  width: 250px;
-  padding: 20px;
-  background-color: #f5f5f5;
-  border-right: 1px solid #ddd;
+/* Modern Collapsible Sidebar */
+.sidebar {
+  width: 280px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
+  position: relative;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  z-index: 10;
+}
+
+.sidebar.collapsed {
+  width: 48px;
+}
+
+.collapse-toggle {
+  position: absolute;
+  top: 16px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.collapse-toggle:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  transform: scale(1.05);
+}
+
+.collapse-toggle svg {
+  color: #6b7280;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar.collapsed .sidebar-content {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .toolbar {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.toolbar button {
-  padding: 8px 16px;
-  background-color: #2196f3;
-  color: white;
-  border: none;
-  border-radius: 4px;
+.toolbar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
-  flex: 1;
-  min-width: 100px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-align: left;
 }
 
-.toolbar button:hover {
-  background-color: #1976d2;
+.toolbar-btn:hover {
+  background: #f1f5f9;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+}
+
+.toolbar-btn.active {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+
+.toolbar-btn svg {
+  flex-shrink: 0;
 }
 
 .zoom-controls {
   display: flex;
   align-items: center;
-  gap: 5px;
-  margin-top: 10px;
-  width: 100%;
+  gap: 4px;
+  padding: 8px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
 }
 
-.zoom-controls button {
-  padding: 4px 8px;
-  background-color: #2196f3;
-  color: white;
-  border: none;
-  border-radius: 4px;
+.zoom-btn {
+  width: 32px;
+  height: 32px;
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.zoom-btn:hover {
+  background: #f1f5f9;
+  border-color: #d1d5db;
+}
+
+.zoom-btn.reset {
+  width: auto;
+  padding: 0 8px;
   font-size: 12px;
-  min-width: 30px;
+  font-weight: 500;
 }
 
 .zoom-level {
-  padding: 4px 8px;
-  background-color: #e0e0e0;
-  border-radius: 4px;
-  font-size: 12px;
-  text-align: center;
   flex: 1;
+  padding: 8px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  color: #374151;
 }
 
 .template-segment {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .template-segment h3 {
-  margin-bottom: 10px;
-  color: #333;
+  margin-bottom: 12px;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
 }
 
 .undo-notification {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  background-color: #4CAF50;
+  top: 24px;
+  right: 24px;
+  background: #10b981;
   color: white;
-  padding: 10px 20px;
-  border-radius: 4px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   z-index: 1000;
-  animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
+  font-size: 14px;
+  font-weight: 500;
+  animation: slideInFade 0.3s ease-out, slideOutFade 0.3s ease-in 1.7s;
+  backdrop-filter: blur(8px);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@keyframes slideInFade {
+  from {
+    opacity: 0;
+    transform: translateX(100%) translateY(-50%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
 }
 
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+@keyframes slideOutFade {
+  from {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%) translateY(-50%);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 240px;
+  }
+
+  .sidebar.collapsed {
+    width: 44px;
+  }
+
+  .floating-toolbar {
+    left: 16px;
+    right: 16px;
+    transform: none;
+    width: auto;
+  }
+
+  .toolbar-section {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .sidebar-content {
+    padding: 16px;
+  }
+
+  .toolbar-btn {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
 }
 </style>
