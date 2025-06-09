@@ -198,6 +198,10 @@ export const usePlanogramStore = defineStore('planogram', {
       type?: string
       image?: string
       code?: string
+      name?: string
+      visual?: any
+      brand?: string
+      category?: string
     }) {
       const newProduct: Product = {
         id: uuidv4(),
@@ -213,7 +217,10 @@ export const usePlanogramStore = defineStore('planogram', {
         segmentId: payload.segmentId,
         type: payload.type || 'Food',
         color: payload.color || '#81C784',
-        category: 'product',
+        category: payload.category || 'product',
+        name: payload.name,
+        brand: payload.brand,
+        visual: payload.visual,
         image: payload.type === 'Drink' ? '/src/assets/products/cola.png' : 
                payload.type === 'Food' ? '/src/assets/products/pepsi.png' : 
                '/src/assets/products/default.png',

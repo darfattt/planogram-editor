@@ -1,44 +1,82 @@
 <template>
   <div class="planogram-editor">
+    <!-- Floating Toolbar -->
+    <FloatingToolbar
+      :active-tool="activeTool"
+      :zoom-level="globalZoomLevel"
+      @tool-change="handleToolChange"
+      @undo="handleUndo"
+      @redo="handleRedo"
+      @zoom-in="globalZoomIn"
+      @zoom-out="globalZoomOut"
+      @zoom-fit="resetGlobalZoom"
+      @save="handleSave"
+      @load="handleLoad"
+      @export="handleExport"
+    />
+
     <!-- Undo notification -->
     <div class="undo-notification" v-if="showUndoNotification">
       Action undone
     </div>
-    <div class="templates">
-      <div class="toolbar">
-        <button @click="handleSave">Save</button>
-        <button @click="handleLoad">Load</button>
-        <button @click="handleUndo" title="Undo (Ctrl+Z)">Undo</button>
-        <button @click="showProductImages = !showProductImages">
-          {{ showProductImages ? 'Hide' : 'Show' }} Images
+
+    <!-- Collapsible sidebar -->
+    <div class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+      <div class="sidebar-header">
+        <h3 v-if="!sidebarCollapsed">Templates</h3>
+        <button
+          class="sidebar-toggle"
+          @click="toggleSidebar"
+          :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path :d="sidebarCollapsed ? 'M9 18l6-6-6-6' : 'M15 18l-6-6 6-6'"/>
+          </svg>
         </button>
-        <div class="zoom-controls">
-          <button @click="globalZoomOut" title="Zoom Out">-</button>
-          <span class="zoom-level">{{ Math.round(globalZoomLevel * 100) }}%</span>
-          <button @click="globalZoomIn" title="Zoom In">+</button>
-          <button @click="resetGlobalZoom" title="Reset Zoom">100%</button>
+      </div>
+
+      <div v-if="!sidebarCollapsed" class="sidebar-content">
+        <div class="template-segment">
+          <FixtureTemplate @dragstart="handleDragStart" />
         </div>
-        <!-- <button @click="open2DView">2D View</button>
-        <button @click="open3DView">3D View</button> -->
-      </div>
-      <div class="template-segment">
-        <h3>Fixtures Template</h3>
-        <FixtureTemplate @dragstart="handleDragStart" />
-      </div>
-      <div class="template-segment">
-        <h3>Products Template</h3>
-        <ProductTemplate 
-          @dragstart="handleDragStart"
-          @add-product="handleAddProduct"
-        />
+        <div class="template-segment">
+          <ProductTemplate
+            @dragstart="handleDragStart"
+            @add-product="handleAddProduct"
+          />
+        </div>
+
+        <!-- Settings panel -->
+        <div class="template-segment">
+          <h4>Settings</h4>
+          <div class="settings-group">
+            <label class="setting-item">
+              <input
+                type="checkbox"
+                v-model="showProductImages"
+              />
+              <span>Show Product Images</span>
+            </label>
+            <label class="setting-item">
+              <input
+                type="checkbox"
+                v-model="snapToGrid"
+              />
+              <span>Snap to Grid</span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
-    
-    <WorkspaceView 
-      ref="workspaceRef"
-      @open-2d-view="open2DView"
-      @open-3d-view="open3DView"
-    />
+
+    <!-- Main workspace -->
+    <div class="workspace-container" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+      <WorkspaceView
+        ref="workspaceRef"
+        @open-2d-view="open2DView"
+        @open-3d-view="open3DView"
+      />
+    </div>
   </div>
 </template>
 
@@ -47,6 +85,7 @@ import { defineComponent, ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import FixtureTemplate from './templates/FixtureTemplate.vue'
 import ProductTemplate from './templates/ProductTemplate.vue'
 import WorkspaceView from './workspace/WorkspaceView.vue'
+import FloatingToolbar from './ui/FloatingToolbar.vue'
 import type { DraggedItem, Product, Segment, Shelf } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import Konva from 'konva'
@@ -58,7 +97,8 @@ export default defineComponent({
   components: {
     FixtureTemplate,
     ProductTemplate,
-    WorkspaceView
+    WorkspaceView,
+    FloatingToolbar
   },
   setup() {
     console.log('PlanogramEditor setup');
@@ -71,6 +111,11 @@ export default defineComponent({
     const workspaceRef = ref<InstanceType<typeof WorkspaceView> | null>(null)
     const showUndoNotification = ref(false)
     const globalZoomLevel = ref(1)
+
+    // New state for minimalist UI
+    const activeTool = ref('select')
+    const sidebarCollapsed = ref(false)
+    const snapToGrid = ref(true)
     
     // Initialize with test data only if no data exists
     onMounted(() => {
@@ -174,19 +219,46 @@ export default defineComponent({
       e.evt.preventDefault();
     };
 
-    const handleAddProduct = (item: DraggedItem) => {
+    const handleAddProduct = (item: DraggedItem & { template?: any }) => {
       if (item.type === 'product') {
-        addProduct({
+        const productData = {
           x: item.position?.x ?? 100,
           y: item.position?.y ?? 100,
           width: item.properties.width,
           height: item.properties.height,
-          depth: 30, // Default depth for products
-          type: 'default',
-          color: '#4444ff',
-          code: item.code ?? 'default'
-        })
+          depth: item.properties.depth || 30,
+          type: item.template?.category || 'default',
+          color: item.template?.defaultProperties?.visual?.primaryColor || '#4444ff',
+          code: item.code ?? 'default',
+          // Enhanced properties from template
+          ...(item.template?.defaultProperties?.visual && {
+            visual: item.template.defaultProperties.visual
+          }),
+          ...(item.template?.defaultProperties?.name && {
+            name: item.template.defaultProperties.name
+          })
+        }
+        addProduct(productData)
       }
+    }
+
+    // New methods for minimalist UI
+    const handleToolChange = (tool: string) => {
+      activeTool.value = tool
+    }
+
+    const handleRedo = () => {
+      // Implement redo functionality
+      console.log('Redo action')
+    }
+
+    const handleExport = () => {
+      // Implement export functionality
+      console.log('Export action')
+    }
+
+    const toggleSidebar = () => {
+      sidebarCollapsed.value = !sidebarCollapsed.value
     }
 
     const handleSave = () => {
@@ -299,7 +371,15 @@ export default defineComponent({
       globalZoomLevel,
       globalZoomIn,
       globalZoomOut,
-      resetGlobalZoom
+      resetGlobalZoom,
+      // New minimalist UI properties
+      activeTool,
+      sidebarCollapsed,
+      snapToGrid,
+      handleToolChange,
+      handleRedo,
+      handleExport,
+      toggleSidebar
     }
   }
 })
@@ -311,97 +391,171 @@ export default defineComponent({
   height: 100vh;
   width: 100vw;
   position: relative;
+  background: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-.templates {
-  width: 250px;
-  padding: 20px;
-  background-color: #f5f5f5;
-  border-right: 1px solid #ddd;
+/* Sidebar styles */
+.sidebar {
+  width: 280px;
+  background: #ffffff;
+  border-right: 1px solid #e9ecef;
   display: flex;
   flex-direction: column;
+  transition: all 0.25s ease;
+  z-index: 5;
 }
 
-.toolbar {
-  margin-bottom: 20px;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+.sidebar.collapsed {
+  width: 48px;
 }
 
-.toolbar button {
-  padding: 8px 16px;
-  background-color: #2196f3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  flex: 1;
-  min-width: 100px;
-}
-
-.toolbar button:hover {
-  background-color: #1976d2;
-}
-
-.zoom-controls {
+.sidebar-header {
   display: flex;
   align-items: center;
-  gap: 5px;
-  margin-top: 10px;
-  width: 100%;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid #e9ecef;
+  min-height: 60px;
 }
 
-.zoom-controls button {
-  padding: 4px 8px;
-  background-color: #2196f3;
-  color: white;
-  border: none;
-  border-radius: 4px;
+.sidebar-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.sidebar-toggle {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e9ecef;
+  background: #f8f9fa;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 12px;
-  min-width: 30px;
+  color: #6c757d;
+  transition: all 0.15s ease;
 }
 
-.zoom-level {
-  padding: 4px 8px;
-  background-color: #e0e0e0;
-  border-radius: 4px;
-  font-size: 12px;
-  text-align: center;
+.sidebar-toggle:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.sidebar-content {
   flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .template-segment {
-  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.template-segment h3 {
-  margin-bottom: 10px;
-  color: #333;
+.template-segment h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #495057;
 }
 
+/* Settings styles */
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #495057;
+}
+
+.setting-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #1971c2;
+}
+
+/* Workspace container */
+.workspace-container {
+  flex: 1;
+  transition: all 0.25s ease;
+  margin-left: 0;
+}
+
+.workspace-container.sidebar-collapsed {
+  margin-left: 0;
+}
+
+/* Notifications */
 .undo-notification {
   position: fixed;
-  top: 20px;
+  top: 80px;
   right: 20px;
-  background-color: #4CAF50;
+  background: #51cf66;
   color: white;
-  padding: 10px 20px;
-  border-radius: 4px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   z-index: 1000;
-  animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
+  font-size: 14px;
+  font-weight: 500;
+  animation: slideIn 0.3s ease, slideOut 0.3s ease 1.7s;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .sidebar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    z-index: 10;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+    width: 280px;
+  }
+
+  .workspace-container {
+    margin-left: 0;
+  }
 }
 </style>
