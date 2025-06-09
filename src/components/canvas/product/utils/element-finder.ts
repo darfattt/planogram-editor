@@ -43,13 +43,23 @@ export function findElements(stage: Stage): ElementFinderResult {
 }
 
 export function findTargetShelf(
-  shelves: Group[], 
+  shelves: Group[],
   absolutePos: { x: number; y: number },
   productHeight: number,
   yTolerance = 10
 ): Group | null {
   return shelves.find(shelf => {
-    const shelfPos = shelf.getAbsolutePosition()
+    // Get stage and scale for zoom adjustment
+    const stage = shelf.getStage()
+    const scale = stage ? stage.scaleX() : 1
+
+    // Get shelf position and adjust for zoom
+    const rawShelfPos = shelf.getAbsolutePosition()
+    const shelfPos = {
+      x: rawShelfPos.x / scale,
+      y: rawShelfPos.y / scale
+    }
+
     const shelfData = shelf.getAttr(ATTR_SHELF_DATA)
     const shelfWidth = shelf.getAttr(ATTR_WIDTH)
     const shelfHeight = shelf.getAttr(ATTR_HEIGHT)
@@ -71,7 +81,17 @@ export function findTargetProduct(
   xTolerance = 5
 ): Node | null {
   return allProducts.find(product => {
-    const productPos = product.getAbsolutePosition()
+    // Get stage and scale for zoom adjustment
+    const stage = product.getStage()
+    const scale = stage ? stage.scaleX() : 1
+
+    // Get product position and adjust for zoom
+    const rawProductPos = product.getAbsolutePosition()
+    const productPos = {
+      x: rawProductPos.x / scale,
+      y: rawProductPos.y / scale
+    }
+
     return (
       absolutePos.x + product.getAttr(ATTR_WIDTH) + xTolerance >= productPos.x  &&
       absolutePos.x <= productPos.x + product.getAttr(ATTR_WIDTH) + xTolerance &&

@@ -150,16 +150,21 @@ export default defineComponent({
     const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
       debugStore.clearDragNodePosition()
       const node = e.target as Node<NodeConfig>
-      if (node.getAttr(ATTR_CATEGORY) !== CATEGORY_FIXTURES && 
+      if (node.getAttr(ATTR_CATEGORY) !== CATEGORY_FIXTURES &&
           node.getAttr(ATTR_SUB_CATEGORY) !== SUB_CATEGORY_PEGBOARD) return
-      
-      const pos = node.getAbsolutePosition()
+
       const stage = node.getStage()
       if (!stage) return
 
-      const originalX = props.pegboard.segmentId ? (props.pegboard.relativeX ?? 0) : (props.pegboard.x ?? 0)
-      const originalY = props.pegboard.segmentId ? (props.pegboard.relativeY ?? 0) : (props.pegboard.y ?? 0)
-      const originalSegmentId = props.pegboard.segmentId
+      // Get the current zoom scale
+      const scale = stage.scaleX()
+
+      // Get position and adjust for zoom
+      const rawPos = node.getAbsolutePosition()
+      const pos = {
+        x: rawPos.x / scale,
+        y: rawPos.y / scale
+      }
 
       const segments = findSegments(stage)
       const foundSegment = findIntersectingSegment(

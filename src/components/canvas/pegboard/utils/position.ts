@@ -18,7 +18,17 @@ export function calculatePegboardPosition(
   segment: Group,
   position: { x: number; y: number }
 ): PegboardPosition {
-  const segmentPos = segment.absolutePosition()
+  // Get stage and scale for zoom adjustment
+  const stage = segment.getStage()
+  const scale = stage ? stage.scaleX() : 1
+
+  // Get segment position and adjust for zoom
+  const rawSegmentPos = segment.absolutePosition()
+  const segmentPos = {
+    x: rawSegmentPos.x / scale,
+    y: rawSegmentPos.y / scale
+  }
+
   const pegboardWidth = pegboardNode.width()
   const pegboardHeight = pegboardNode.height()
   const segmentWidth = segment.width()

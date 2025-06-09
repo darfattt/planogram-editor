@@ -29,9 +29,20 @@ export function checkSegmentIntersegment(
   shelfWidth: number,
   shelfHeight: number
 ): boolean {
+  // Get stage and scale for zoom adjustment
+  const stage = segment.getStage()
+  const scale = stage ? stage.scaleX() : 1
+
+  // Get segment position and adjust for zoom
+  const rawSegmentPos = segment.getAbsolutePosition()
+  const segmentPos = {
+    x: rawSegmentPos.x / scale,
+    y: rawSegmentPos.y / scale
+  }
+
   const bounds: SegmentBounds = {
-    segmentX: segment.x(),
-    segmentY: segment.y(),
+    segmentX: segmentPos.x,
+    segmentY: segmentPos.y,
     segmentWidth: segment.getAttr(ATTR_WIDTH),
     segmentHeight: segment.getAttr(ATTR_HEIGHT),
     shelfWidth,

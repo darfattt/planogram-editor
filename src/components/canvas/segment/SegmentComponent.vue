@@ -42,7 +42,6 @@ import PegboardComponent from '../pegboard/PegboardComponent.vue'
 import type { Segment } from '../../../types'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { useSelectionStore } from '../../../composables/useSelectionStore'
-import { storeToRefs } from 'pinia'
 
 export default defineComponent({
   name: 'SegmentComponent',

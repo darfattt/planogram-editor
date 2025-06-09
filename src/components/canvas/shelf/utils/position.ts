@@ -19,12 +19,20 @@ export function calculateShelfPosition(
   segment: Node,
   pos: { x: number; y: number }
 ): ShelfPositionUpdate {
-  const segmentX = segment.x()
-  const segmentY = segment.y()
-  
+  // Get stage and scale for zoom adjustment
+  const stage = segment.getStage()
+  const scale = stage ? stage.scaleX() : 1
+
+  // Get segment position and adjust for zoom
+  const rawSegmentPos = segment.getAbsolutePosition()
+  const segmentPos = {
+    x: rawSegmentPos.x / scale,
+    y: rawSegmentPos.y / scale
+  }
+
   // Always align to left (x: 0) when in a segment
   const relativeX = 0
-  const relativeY = pos.y - segmentY
+  const relativeY = pos.y - segmentPos.y
   
   // Move shelf to segment and set position
   node.moveTo(segment)
@@ -38,7 +46,7 @@ export function calculateShelfPosition(
 
   return {
     segmentId: segment.id(),
-    x: segmentX,
+    x: segmentPos.x,
     y: pos.y,
     relativeX: relativeX,
     relativeY: relativeY
